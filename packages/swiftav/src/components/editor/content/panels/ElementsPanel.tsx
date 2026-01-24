@@ -27,7 +27,7 @@ const mockElements: Record<string, ElementItem[]> = {
   stickers: Array.from({ length: 20 }, (_, i) => ({
     id: `sticker-${i + 1}`,
     type: "sticker" as const,
-    thumbnailUrl: `https://via.placeholder.com/80x80?text=Sticker${i + 1}`,
+    thumbnailUrl: ``,
   })),
   emojis: [
     "😀",
@@ -58,7 +58,7 @@ const mockElements: Record<string, ElementItem[]> = {
   gifs: Array.from({ length: 20 }, (_, i) => ({
     id: `gif-${i + 1}`,
     type: "gif" as const,
-    thumbnailUrl: `https://via.placeholder.com/80x80?text=GIF${i + 1}`,
+    thumbnailUrl: ``,
   })),
 };
 
