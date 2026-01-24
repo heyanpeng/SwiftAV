@@ -1,5 +1,5 @@
 {
-  "name": "@swiftav/sdk",
+  "name": "@swiftav/entities",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -19,13 +19,6 @@
     "dev": "tsc --watch",
     "lint": "eslint ."
   },
-  "dependencies": {
-    "@swiftav/entities": "workspace:*",
-    "@swiftav/use-cases": "workspace:*",
-    "@swiftav/infrastructure-media": "workspace:*",
-    "@swiftav/infrastructure-render": "workspace:*",
-    "@swiftav/infrastructure-storage": "workspace:*"
-  },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@types/node": "^24.10.1",
@@ -33,6 +26,5 @@
     "globals": "^16.5.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4"
-  },
-  "peerDependencies": {}
+  }
 }

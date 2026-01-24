@@ -1,5 +1,5 @@
 {
-  "name": "@swiftav/sdk",
+  "name": "@swiftav/infrastructure-storage",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -20,11 +20,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@swiftav/entities": "workspace:*",
-    "@swiftav/use-cases": "workspace:*",
-    "@swiftav/infrastructure-media": "workspace:*",
-    "@swiftav/infrastructure-render": "workspace:*",
-    "@swiftav/infrastructure-storage": "workspace:*"
+    "@swiftav/entities": "workspace:*"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
@@ -33,6 +29,5 @@
     "globals": "^16.5.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4"
-  },
-  "peerDependencies": {}
+  }
 }
