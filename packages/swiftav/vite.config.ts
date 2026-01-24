@@ -12,7 +12,7 @@ export default defineConfig({
   resolve: {
     alias: {
       // 开发时使用源码，生产构建时使用构建后的包（通过 workspace 协议自动解析）
-      '@swiftav/sdk': path.resolve(__dirname, '../swiftav-sdk/src'),
+      '@swiftav/sdk': path.resolve(__dirname, '../@swiftav/sdk/src'),
     },
   },
 });

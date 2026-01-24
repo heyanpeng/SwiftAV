@@ -27,7 +27,7 @@
     /* Path mapping */
     "baseUrl": ".",
     "paths": {
-      "@swiftav/sdk": ["../swiftav-sdk/src"]
+      "@swiftav/sdk": ["../@swiftav/sdk/src"]
     }
   },
   "include": ["src"]

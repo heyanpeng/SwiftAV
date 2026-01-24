@@ -27,11 +27,248 @@ importers:
         specifier: ^8.46.4
         version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
 
+  packages/@swiftav/audio:
+    dependencies:
+      '@swiftav/core':
+        specifier: workspace:*
+        version: link:../core
+      '@swiftav/types':
+        specifier: workspace:*
+        version: link:../types
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.39.1
+        version: 9.39.2
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.10.9
+      eslint:
+        specifier: ^9.39.1
+        version: 9.39.2
+      globals:
+        specifier: ^16.5.0
+        version: 16.5.0
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.46.4
+        version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
+
+  packages/@swiftav/canvas:
+    dependencies:
+      '@swiftav/core':
+        specifier: workspace:*
+        version: link:../core
+      '@swiftav/types':
+        specifier: workspace:*
+        version: link:../types
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.39.1
+        version: 9.39.2
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.10.9
+      eslint:
+        specifier: ^9.39.1
+        version: 9.39.2
+      globals:
+        specifier: ^16.5.0
+        version: 16.5.0
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.46.4
+        version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
+
+  packages/@swiftav/core:
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.39.1
+        version: 9.39.2
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.10.9
+      eslint:
+        specifier: ^9.39.1
+        version: 9.39.2
+      globals:
+        specifier: ^16.5.0
+        version: 16.5.0
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.46.4
+        version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
+
+  packages/@swiftav/editor:
+    dependencies:
+      '@swiftav/audio':
+        specifier: workspace:*
+        version: link:../audio
+      '@swiftav/core':
+        specifier: workspace:*
+        version: link:../core
+      '@swiftav/renderer':
+        specifier: workspace:*
+        version: link:../renderer
+      '@swiftav/types':
+        specifier: workspace:*
+        version: link:../types
+      '@swiftav/video':
+        specifier: workspace:*
+        version: link:../video
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.39.1
+        version: 9.39.2
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.10.9
+      eslint:
+        specifier: ^9.39.1
+        version: 9.39.2
+      globals:
+        specifier: ^16.5.0
+        version: 16.5.0
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.46.4
+        version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
+
+  packages/@swiftav/renderer:
+    dependencies:
+      '@swiftav/canvas':
+        specifier: workspace:*
+        version: link:../canvas
+      '@swiftav/core':
+        specifier: workspace:*
+        version: link:../core
+      '@swiftav/types':
+        specifier: workspace:*
+        version: link:../types
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.39.1
+        version: 9.39.2
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.10.9
+      eslint:
+        specifier: ^9.39.1
+        version: 9.39.2
+      globals:
+        specifier: ^16.5.0
+        version: 16.5.0
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.46.4
+        version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
+
+  packages/@swiftav/sdk:
+    dependencies:
+      '@swiftav/audio':
+        specifier: workspace:*
+        version: link:../audio
+      '@swiftav/canvas':
+        specifier: workspace:*
+        version: link:../canvas
+      '@swiftav/core':
+        specifier: workspace:*
+        version: link:../core
+      '@swiftav/editor':
+        specifier: workspace:*
+        version: link:../editor
+      '@swiftav/renderer':
+        specifier: workspace:*
+        version: link:../renderer
+      '@swiftav/types':
+        specifier: workspace:*
+        version: link:../types
+      '@swiftav/video':
+        specifier: workspace:*
+        version: link:../video
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.39.1
+        version: 9.39.2
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.10.9
+      eslint:
+        specifier: ^9.39.1
+        version: 9.39.2
+      globals:
+        specifier: ^16.5.0
+        version: 16.5.0
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.46.4
+        version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
+
+  packages/@swiftav/types:
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.39.1
+        version: 9.39.2
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.10.9
+      eslint:
+        specifier: ^9.39.1
+        version: 9.39.2
+      globals:
+        specifier: ^16.5.0
+        version: 16.5.0
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.46.4
+        version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
+
+  packages/@swiftav/video:
+    dependencies:
+      '@swiftav/core':
+        specifier: workspace:*
+        version: link:../core
+      '@swiftav/types':
+        specifier: workspace:*
+        version: link:../types
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.39.1
+        version: 9.39.2
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.10.9
+      eslint:
+        specifier: ^9.39.1
+        version: 9.39.2
+      globals:
+        specifier: ^16.5.0
+        version: 16.5.0
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.46.4
+        version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
+
   packages/swiftav:
     dependencies:
       '@swiftav/sdk':
         specifier: workspace:*
-        version: link:../swiftav-sdk
+        version: link:../@swiftav/sdk
       lucide-react:
         specifier: ^0.563.0
         version: 0.563.0(react@19.2.3)
@@ -84,27 +321,6 @@ importers:
       vite:
         specifier: ^7.2.4
         version: 7.3.1(@types/node@24.10.9)
-
-  packages/swiftav-sdk:
-    devDependencies:
-      '@eslint/js':
-        specifier: ^9.39.1
-        version: 9.39.2
-      '@types/node':
-        specifier: ^24.10.1
-        version: 24.10.9
-      eslint:
-        specifier: ^9.39.1
-        version: 9.39.2
-      globals:
-        specifier: ^16.5.0
-        version: 16.5.0
-      typescript:
-        specifier: ~5.9.3
-        version: 5.9.3
-      typescript-eslint:
-        specifier: ^8.46.4
-        version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
 
 packages:
 

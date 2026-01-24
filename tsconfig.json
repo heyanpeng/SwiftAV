@@ -2,6 +2,6 @@
   "files": [],
   "references": [
     { "path": "./packages/swiftav" },
-    { "path": "./packages/swiftav-sdk" }
+    { "path": "./packages/@swiftav/sdk" }
   ]
 }
