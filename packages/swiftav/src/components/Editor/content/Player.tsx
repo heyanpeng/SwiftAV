@@ -1,5 +1,5 @@
-import { Canvas } from './Canvas';
-import './Player.css';
+import { Canvas } from "./Canvas";
+import "./Player.css";
 
 export function Player() {
   return (

@@ -1,5 +1,5 @@
-import { PlaybackControls } from './PlaybackControls';
-import './Timeline.css';
+import { PlaybackControls } from "./PlaybackControls";
+import "./Timeline.css";
 
 export function Timeline() {
   return (

@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { SidebarNav } from './SidebarNav';
-import { AssetPanel } from './AssetPanel';
-import './OptionsPanel.css';
+import { useState } from "react";
+import { SidebarNav } from "./SidebarNav";
+import { AssetPanel } from "./AssetPanel";
+import "./OptionsPanel.css";
 
 export function OptionsPanel() {
   const [activeTab, setActiveTab] = useState('media');

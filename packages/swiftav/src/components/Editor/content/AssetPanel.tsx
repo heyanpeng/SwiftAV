@@ -1,5 +1,5 @@
-import './AssetPanel.css';
-import { Cloud, Upload } from 'lucide-react';
+import "./AssetPanel.css";
+import { Cloud, Upload } from "lucide-react";
 
 export function AssetPanel() {
   return (
@@ -11,7 +11,9 @@ export function AssetPanel() {
         </div>
         <label className="asset-panel__upload-label">
           <span className="asset-panel__upload-text-primary">点击上传</span>
-          <span className="asset-panel__upload-text-secondary">或将文件拖放到此处</span>
+          <span className="asset-panel__upload-text-secondary">
+            或将文件拖放到此处
+          </span>
         </label>
       </div>
     </div>

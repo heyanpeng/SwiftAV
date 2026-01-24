@@ -1,8 +1,8 @@
-import { Header } from './Header';
-import { OptionsPanel } from './OptionsPanel';
-import { Player } from './Player';
-import { Timeline } from './Timeline';
-import './EditorLayout.css';
+import { Header } from "./header/Header";
+import { OptionsPanel } from "./content/OptionsPanel";
+import { Player } from "./content/Player";
+import { Timeline } from "./timeline/Timeline";
+import "./EditorLayout.css";
 
 export function EditorLayout() {
   return (

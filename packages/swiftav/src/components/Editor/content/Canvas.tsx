@@ -1,4 +1,4 @@
-import './Canvas.css';
+import "./Canvas.css";
 
 export function Canvas() {
   return (
