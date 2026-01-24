@@ -1,33 +1,75 @@
 import { useState } from "react";
-import { Monitor, ChevronDown, Check } from "lucide-react";
+import {
+  Monitor,
+  ChevronDown,
+  Check,
+  Video,
+  Smartphone,
+  Tablet,
+  Square,
+  RectangleHorizontal,
+  RectangleVertical,
+  Maximize2,
+} from "lucide-react";
 import "./CanvasPanel.css";
 
 type CanvasSize = {
   label: string;
   value: string;
   group?: "social" | "general";
+  icon?: React.ComponentType<{ size?: number; className?: string }>;
 };
 
 const canvasSizes: CanvasSize[] = [
   // 社交媒体预设
-  { label: "YouTube — 16:9", value: "youtube-16:9", group: "social" },
-  { label: "YouTube Shorts — 9:16", value: "youtube-shorts-9:16", group: "social" },
-  { label: "TikTok — 9:16", value: "tiktok-9:16", group: "social" },
-  { label: "Instagram Story & Reels — 9:16", value: "instagram-story-9:16", group: "social" },
-  { label: "Instagram Post Square — 1:1", value: "instagram-square-1:1", group: "social" },
-  { label: "Instagram Post — 4:5", value: "instagram-post-4:5", group: "social" },
-  { label: "Spotify Canvas — 9:16", value: "spotify-9:16", group: "social" },
-  { label: "Facebook Story — 9:16", value: "facebook-story-9:16", group: "social" },
-  { label: "Snapchat Story — 9:16", value: "snapchat-story-9:16", group: "social" },
+  { label: "抖音 — 9:16", value: "douyin-9:16", group: "social", icon: Video },
+  {
+    label: "抖音横屏 — 16:9",
+    value: "douyin-landscape-16:9",
+    group: "social",
+    icon: Monitor,
+  },
+  { label: "快手 — 9:16", value: "kuaishou-9:16", group: "social", icon: Video },
+  {
+    label: "小红书 — 3:4",
+    value: "xiaohongshu-3:4",
+    group: "social",
+    icon: Tablet,
+  },
+  {
+    label: "小红书方形 — 1:1",
+    value: "xiaohongshu-square-1:1",
+    group: "social",
+    icon: Square,
+  },
+  {
+    label: "视频号 — 16:9",
+    value: "wechat-video-16:9",
+    group: "social",
+    icon: Monitor,
+  },
+  {
+    label: "视频号竖屏 — 9:16",
+    value: "wechat-video-9:16",
+    group: "social",
+    icon: Smartphone,
+  },
+  { label: "B站 — 16:9", value: "bilibili-16:9", group: "social", icon: Monitor },
+  {
+    label: "B站竖屏 — 9:16",
+    value: "bilibili-9:16",
+    group: "social",
+    icon: Smartphone,
+  },
   // 通用预设
-  { label: "Widescreen — 16:9", value: "16:9", group: "general" },
-  { label: "Full Portrait — 9:16", value: "9:16", group: "general" },
-  { label: "Square — 1:1", value: "1:1", group: "general" },
-  { label: "Landscape — 4:3", value: "4:3", group: "general" },
-  { label: "Portrait — 4:5", value: "4:5", group: "general" },
-  { label: "Landscape Post — 5:4", value: "5:4", group: "general" },
-  { label: "Vertical — 2:3", value: "2:3", group: "general" },
-  { label: "Ultrawide — 21:9", value: "21:9", group: "general" },
+  { label: "宽屏 — 16:9", value: "16:9", group: "general", icon: RectangleHorizontal },
+  { label: "竖屏 — 9:16", value: "9:16", group: "general", icon: RectangleVertical },
+  { label: "方形 — 1:1", value: "1:1", group: "general", icon: Square },
+  { label: "横屏 — 4:3", value: "4:3", group: "general", icon: RectangleHorizontal },
+  { label: "竖屏 — 4:5", value: "4:5", group: "general", icon: RectangleVertical },
+  { label: "横屏海报 — 5:4", value: "5:4", group: "general", icon: RectangleHorizontal },
+  { label: "竖屏 — 2:3", value: "2:3", group: "general", icon: RectangleVertical },
+  { label: "超宽屏 — 21:9", value: "21:9", group: "general", icon: Maximize2 },
 ];
 
 type BackgroundColor =
@@ -36,7 +78,18 @@ type BackgroundColor =
 
 const backgroundColors: BackgroundColor[] = [
   // 第一行
-  { type: "gradient", colors: ["#ff0000", "#ff7f00", "#ffff00", "#00ff00", "#0000ff", "#4b0082", "#9400d3"] }, // 彩虹渐变
+  {
+    type: "gradient",
+    colors: [
+      "#ff0000",
+      "#ff7f00",
+      "#ffff00",
+      "#00ff00",
+      "#0000ff",
+      "#4b0082",
+      "#9400d3",
+    ],
+  }, // 彩虹渐变
   { type: "solid", color: "#000000" }, // 黑色
   { type: "solid", color: "#ffffff" }, // 白色
   { type: "solid", color: "#ff0000" }, // 红色
@@ -63,8 +116,10 @@ export function CanvasPanel() {
   const [selectedSize, setSelectedSize] = useState("16:9");
   const [isSizeDropdownOpen, setIsSizeDropdownOpen] = useState(false);
 
-  const selectedSizeLabel = canvasSizes.find((s) => s.value === selectedSize)?.label || "Widescreen — 16:9";
-  
+  const selectedSizeLabel =
+    canvasSizes.find((s) => s.value === selectedSize)?.label ||
+    "Widescreen — 16:9";
+
   const socialSizes = canvasSizes.filter((s) => s.group === "social");
   const generalSizes = canvasSizes.filter((s) => s.group === "general");
 
@@ -80,46 +135,60 @@ export function CanvasPanel() {
               className="canvas-panel__size-dropdown"
               onClick={() => setIsSizeDropdownOpen(!isSizeDropdownOpen)}
             >
-              <span className="canvas-panel__size-label">{selectedSizeLabel}</span>
+              <span className="canvas-panel__size-label">
+                {selectedSizeLabel}
+              </span>
               <ChevronDown size={16} className="canvas-panel__chevron-icon" />
             </div>
             {isSizeDropdownOpen && (
               <div className="canvas-panel__dropdown-menu">
-                {socialSizes.map((size) => (
-                  <div
-                    key={size.value}
-                    className={`canvas-panel__dropdown-item ${
-                      selectedSize === size.value ? "canvas-panel__dropdown-item--selected" : ""
-                    }`}
-                    onClick={() => {
-                      setSelectedSize(size.value);
-                      setIsSizeDropdownOpen(false);
-                    }}
-                  >
-                    <span>{size.label}</span>
-                    {selectedSize === size.value && (
-                      <Check size={16} className="canvas-panel__check-icon" />
-                    )}
-                  </div>
-                ))}
+                {socialSizes.map((size) => {
+                  const IconComponent = size.icon || Monitor;
+                  return (
+                    <div
+                      key={size.value}
+                      className={`canvas-panel__dropdown-item ${
+                        selectedSize === size.value
+                          ? "canvas-panel__dropdown-item--selected"
+                          : ""
+                      }`}
+                      onClick={() => {
+                        setSelectedSize(size.value);
+                        setIsSizeDropdownOpen(false);
+                      }}
+                    >
+                      <IconComponent size={16} className="canvas-panel__item-icon" />
+                      <span>{size.label}</span>
+                      {selectedSize === size.value && (
+                        <Check size={16} className="canvas-panel__check-icon" />
+                      )}
+                    </div>
+                  );
+                })}
                 <div className="canvas-panel__dropdown-divider"></div>
-                {generalSizes.map((size) => (
-                  <div
-                    key={size.value}
-                    className={`canvas-panel__dropdown-item ${
-                      selectedSize === size.value ? "canvas-panel__dropdown-item--selected" : ""
-                    }`}
-                    onClick={() => {
-                      setSelectedSize(size.value);
-                      setIsSizeDropdownOpen(false);
-                    }}
-                  >
-                    <span>{size.label}</span>
-                    {selectedSize === size.value && (
-                      <Check size={16} className="canvas-panel__check-icon" />
-                    )}
-                  </div>
-                ))}
+                {generalSizes.map((size) => {
+                  const IconComponent = size.icon || Monitor;
+                  return (
+                    <div
+                      key={size.value}
+                      className={`canvas-panel__dropdown-item ${
+                        selectedSize === size.value
+                          ? "canvas-panel__dropdown-item--selected"
+                          : ""
+                      }`}
+                      onClick={() => {
+                        setSelectedSize(size.value);
+                        setIsSizeDropdownOpen(false);
+                      }}
+                    >
+                      <IconComponent size={16} className="canvas-panel__item-icon" />
+                      <span>{size.label}</span>
+                      {selectedSize === size.value && (
+                        <Check size={16} className="canvas-panel__check-icon" />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -134,8 +203,9 @@ export function CanvasPanel() {
                 bg.type === "gradient"
                   ? `linear-gradient(135deg, ${bg.colors.join(", ")})`
                   : bg.color;
-              const titleText = bg.type === "gradient" ? "颜色选择器" : bg.color;
-              
+              const titleText =
+                bg.type === "gradient" ? "颜色选择器" : bg.color;
+
               return (
                 <div
                   key={index}

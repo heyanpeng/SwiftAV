@@ -117,8 +117,16 @@
   transition: background-color 0.2s;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
+}
+
+.canvas-panel__dropdown-item > span {
+  flex: 1;
+}
+
+.canvas-panel__item-icon {
+  color: #888888;
+  flex-shrink: 0;
 }
 
 .canvas-panel__dropdown-item:hover {
