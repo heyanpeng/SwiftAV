@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Monitor,
   ChevronDown,
@@ -115,6 +115,8 @@ const backgroundColors: BackgroundColor[] = [
 export function CanvasPanel() {
   const [selectedSize, setSelectedSize] = useState("16:9");
   const [isSizeDropdownOpen, setIsSizeDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
 
   const selectedSizeLabel =
     canvasSizes.find((s) => s.value === selectedSize)?.label ||
@@ -123,25 +125,45 @@ export function CanvasPanel() {
   const socialSizes = canvasSizes.filter((s) => s.group === "social");
   const generalSizes = canvasSizes.filter((s) => s.group === "general");
 
+  useEffect(() => {
+    if (isSizeDropdownOpen) {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (
+          dropdownRef.current &&
+          !dropdownRef.current.contains(event.target as Node) &&
+          triggerRef.current &&
+          !triggerRef.current.contains(event.target as Node)
+        ) {
+          setIsSizeDropdownOpen(false);
+        }
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }
+  }, [isSizeDropdownOpen]);
+
   return (
     <div className="canvas-panel">
       <div className="canvas-panel__content">
         {/* 调整大小部分 */}
         <div className="canvas-panel__section">
           <h3 className="canvas-panel__section-title">调整大小</h3>
-          <div className="canvas-panel__size-selector">
+          <div
+            ref={triggerRef}
+            className="canvas-panel__size-selector"
+            onClick={() => setIsSizeDropdownOpen(!isSizeDropdownOpen)}
+          >
             <Monitor size={16} className="canvas-panel__monitor-icon" />
-            <div
-              className="canvas-panel__size-dropdown"
-              onClick={() => setIsSizeDropdownOpen(!isSizeDropdownOpen)}
-            >
+            <div className="canvas-panel__size-dropdown">
               <span className="canvas-panel__size-label">
                 {selectedSizeLabel}
               </span>
               <ChevronDown size={16} className="canvas-panel__chevron-icon" />
             </div>
             {isSizeDropdownOpen && (
-              <div className="canvas-panel__dropdown-menu">
+              <div ref={dropdownRef} className="canvas-panel__dropdown-menu">
                 {socialSizes.map((size) => {
                   const IconComponent = size.icon || Monitor;
                   return (
