@@ -20,7 +20,8 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@swiftav/entities": "workspace:*"
+    "@swiftav/entities": "workspace:*",
+    "canvaskit-wasm": "^0.40.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
