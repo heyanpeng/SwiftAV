@@ -7,7 +7,7 @@
 ```
 ┌─────────────────────────────────────────┐
 │  Frameworks & Drivers Layer (最外层)      │
-│  infrastructure-web                      │
+│  infra-web                               │
 │  - React 组件 (TodoApp.tsx)              │
 │  - Zustand Store (todoStore.ts)          │
 │  - 依赖注入容器 (container.ts)           │
@@ -15,14 +15,14 @@
               ↓ 调用
 ┌─────────────────────────────────────────┐
 │  Interface Adapters Layer               │
-│  interface-adapters                      │
+│  adapters                                 │
 │  - TodoController                        │
 │  - ITodoStore 接口                       │
 └─────────────────────────────────────────┘
               ↓ 调用
 ┌─────────────────────────────────────────┐
 │  Use Cases Layer                        │
-│  use-cases                              │
+│  usecases                                │
 │  - TodoService (应用服务)                │
 │  - AddTodoUseCase                       │
 │  - RemoveTodoUseCase                    │
@@ -39,7 +39,7 @@
               ↑ 实现
 ┌─────────────────────────────────────────┐
 │  Infrastructure Layer                   │
-│  infrastructure-storage                 │
+│  infra-storage                           │
 │  - TodoRepository (实现)                │
 └─────────────────────────────────────────┘
 ```
@@ -62,18 +62,18 @@
 - `packages/entities/src/repositories/ITodoRepository.ts` - Repository 接口
 
 ### Use Cases Layer
-- `packages/use-cases/src/use-cases/todo/` - 各种 UseCase
-- `packages/use-cases/src/services/TodoService.ts` - 应用服务
+- `packages/usecases/src/use-cases/TodoUseCase.ts` - UseCase
+- `packages/usecases/src/services/` - 应用服务（暂时为空）
 
 ### Interface Adapters Layer
-- `packages/interface-adapters/src/controllers/TodoController.ts` - Controller
-- `packages/interface-adapters/src/controllers/ITodoStore.ts` - Store 接口
+- `packages/adapters/src/controllers/TodoController.ts` - Controller
+- `packages/adapters/src/controllers/ITodoStore.ts` - Store 接口
 
 ### Infrastructure Layer
-- `packages/infrastructure-storage/src/repositories/TodoRepository.ts` - Repository 实现
-- `packages/infrastructure-web/src/stores/todoStore.ts` - Zustand Store 实现
-- `packages/infrastructure-web/src/dependency-injection/container.ts` - 依赖注入
-- `packages/infrastructure-web/src/components/todo/TodoApp.tsx` - React 组件
+- `packages/infra-storage/src/repositories/TodoRepository.ts` - Repository 实现
+- `packages/infra-web/src/stores/todoStore.ts` - Zustand Store 实现
+- `packages/infra-web/src/di/container.ts` - 依赖注入
+- `packages/infra-web/src/components/todo/TodoApp.tsx` - React 组件
 
 ## 运行示例
 

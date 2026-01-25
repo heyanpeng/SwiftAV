@@ -27,6 +27,34 @@ importers:
         specifier: ^8.46.4
         version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
 
+  packages/adapters:
+    dependencies:
+      '@swiftav/entities':
+        specifier: workspace:*
+        version: link:../entities
+      '@swiftav/usecases':
+        specifier: workspace:*
+        version: link:../usecases
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.39.1
+        version: 9.39.2
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.10.9
+      eslint:
+        specifier: ^9.39.1
+        version: 9.39.2
+      globals:
+        specifier: ^16.5.0
+        version: 16.5.0
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.46.4
+        version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
+
   packages/entities:
     devDependencies:
       '@eslint/js':
@@ -48,7 +76,7 @@ importers:
         specifier: ^8.46.4
         version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
 
-  packages/infrastructure-media:
+  packages/infra-media:
     dependencies:
       '@swiftav/entities':
         specifier: workspace:*
@@ -76,7 +104,7 @@ importers:
         specifier: ^8.46.4
         version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
 
-  packages/infrastructure-render:
+  packages/infra-render:
     dependencies:
       '@swiftav/entities':
         specifier: workspace:*
@@ -101,7 +129,7 @@ importers:
         specifier: ^8.46.4
         version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
 
-  packages/infrastructure-storage:
+  packages/infra-storage:
     dependencies:
       '@swiftav/entities':
         specifier: workspace:*
@@ -126,26 +154,26 @@ importers:
         specifier: ^8.46.4
         version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
 
-  packages/infrastructure-web:
+  packages/infra-web:
     dependencies:
+      '@swiftav/adapters':
+        specifier: workspace:*
+        version: link:../adapters
       '@swiftav/entities':
         specifier: workspace:*
         version: link:../entities
-      '@swiftav/infrastructure-media':
+      '@swiftav/infra-media':
         specifier: workspace:*
-        version: link:../infrastructure-media
-      '@swiftav/infrastructure-render':
+        version: link:../infra-media
+      '@swiftav/infra-render':
         specifier: workspace:*
-        version: link:../infrastructure-render
-      '@swiftav/infrastructure-storage':
+        version: link:../infra-render
+      '@swiftav/infra-storage':
         specifier: workspace:*
-        version: link:../infrastructure-storage
-      '@swiftav/interface-adapters':
+        version: link:../infra-storage
+      '@swiftav/usecases':
         specifier: workspace:*
-        version: link:../interface-adapters
-      '@swiftav/use-cases':
-        specifier: workspace:*
-        version: link:../use-cases
+        version: link:../usecases
       lucide-react:
         specifier: ^0.563.0
         version: 0.563.0(react@19.2.3)
@@ -199,35 +227,7 @@ importers:
         specifier: ^7.2.4
         version: 7.3.1(@types/node@24.10.9)
 
-  packages/interface-adapters:
-    dependencies:
-      '@swiftav/entities':
-        specifier: workspace:*
-        version: link:../entities
-      '@swiftav/use-cases':
-        specifier: workspace:*
-        version: link:../use-cases
-    devDependencies:
-      '@eslint/js':
-        specifier: ^9.39.1
-        version: 9.39.2
-      '@types/node':
-        specifier: ^24.10.1
-        version: 24.10.9
-      eslint:
-        specifier: ^9.39.1
-        version: 9.39.2
-      globals:
-        specifier: ^16.5.0
-        version: 16.5.0
-      typescript:
-        specifier: ~5.9.3
-        version: 5.9.3
-      typescript-eslint:
-        specifier: ^8.46.4
-        version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
-
-  packages/use-cases:
+  packages/usecases:
     dependencies:
       '@swiftav/entities':
         specifier: workspace:*

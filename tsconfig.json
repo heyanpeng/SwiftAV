@@ -1,6 +1,6 @@
 {
   "files": [],
   "references": [
-    { "path": "./packages/infrastructure-web" }
+    { "path": "./packages/infra-web" }
   ]
 }

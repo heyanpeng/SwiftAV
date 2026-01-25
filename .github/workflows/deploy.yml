@@ -47,7 +47,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './packages/infrastructure-web/dist'
+          path: './packages/infra-web/dist'
 
   deploy:
     environment:

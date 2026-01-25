@@ -9,12 +9,12 @@ SwiftAV/
 ├── packages/
 │   ├── @swiftav/
 │   │   ├── entities/              # Entities 层（实体层 - 最内层）
-│   │   ├── use-cases/             # Use Cases 层（用例层）
-│   │   ├── interface-adapters/    # Interface Adapters 层（接口适配器层）
-│   │   ├── infrastructure-media/  # Frameworks & Drivers 层（基础设施层 - 媒体）
-│   │   ├── infrastructure-render/ # Frameworks & Drivers 层（基础设施层 - 渲染）
-│   │   └── infrastructure-storage/# Frameworks & Drivers 层（基础设施层 - 存储）
-│   └── infrastructure-web/       # Frameworks & Drivers 层（Web UI - React 应用）
+│   │   ├── usecases/               # Use Cases 层（用例层）
+│   │   ├── adapters/               # Interface Adapters 层（接口适配器层）
+│   │   ├── infra-media/          # Frameworks & Drivers 层（基础设施层 - 媒体）
+│   │   ├── infra-render/         # Frameworks & Drivers 层（基础设施层 - 渲染）
+│   │   └── infra-storage/        # Frameworks & Drivers 层（基础设施层 - 存储）
+│   └── infra-web/                # Frameworks & Drivers 层（Web UI - React 应用）
 ├── pnpm-workspace.yaml             # pnpm workspaces 配置
 └── package.json                    # 根 package.json（统一脚本）
 ```
@@ -26,10 +26,10 @@ SwiftAV/
 ```
 ┌─────────────────────────────────────────┐
 │   Frameworks & Drivers Layer (最外层)   │
-│   @swiftav/infrastructure-web (UI)   │
-│   @swiftav/infrastructure-media        │
-│   @swiftav/infrastructure-render       │
-│   @swiftav/infrastructure-storage      │
+│   @swiftav/infra-web (UI)             │
+│   @swiftav/infra-media                │
+│   @swiftav/infra-render               │
+│   @swiftav/infra-storage              │
 │   - React Components (UI)               │
 │   - Zustand Store 实现                  │
 │   - WebCodecs (Devices)                │
@@ -41,7 +41,7 @@ SwiftAV/
               ↓ 依赖
 ┌─────────────────────────────────────────┐
 │   Interface Adapters Layer (适配器层)   │
-│   @swiftav/interface-adapters          │
+│   @swiftav/adapters                    │
 │   - Controllers (控制器)                │
 │   - Presenters (表现器)                 │
 │   - Gateways (网关接口)                 │
@@ -52,7 +52,7 @@ SwiftAV/
               ↓ 依赖
 ┌─────────────────────────────────────────┐
 │   Use Cases Layer (用例层)              │
-│   @swiftav/use-cases                   │
+│   @swiftav/usecases                    │
 │   - 业务用例实现                        │
 │   - 应用服务                            │
 │   - DTOs                                │
@@ -80,22 +80,22 @@ SwiftAV/
    - 最内层，最稳定，不依赖任何外部框架
    - 包含实体、值对象、仓储接口、领域服务
 
-2. **Use Cases（红色层）** - `@swiftav/use-cases`
+2. **Use Cases（红色层）** - `@swiftav/usecases`
    - 应用级业务规则
    - 定义系统如何操作，协调 Entities
    - 包含用例、应用服务、DTOs
 
-3. **Interface Adapters（绿色层）** - `@swiftav/interface-adapters`
+3. **Interface Adapters（绿色层）** - `@swiftav/adapters`
    - 适配器层，转换数据格式
    - 包含 Controllers、Presenters、Gateways
    - Controllers 处理输入，调用 Use Cases
    - Presenters 将用例输出转换为 UI 格式
 
-4. **Frameworks & Drivers（蓝色层 - 最外层）** - `@swiftav/infrastructure-*`
+4. **Frameworks & Drivers（蓝色层 - 最外层）** - `@swiftav/infra-*`
    - 最外层，包含具体框架和驱动实现
-   - **Web UI**：React 组件、Zustand Store 实现（@swiftav/infrastructure-web）
-   - **Devices**：WebCodecs、CanvasKit（@swiftav/infrastructure-media, @swiftav/infrastructure-render）
-   - **DB**：IndexedDB、LocalStorage（@swiftav/infrastructure-storage）
+   - **Web UI**：React 组件、Zustand Store 实现（@swiftav/infra-web）
+   - **Devices**：WebCodecs、CanvasKit（@swiftav/infra-media, @swiftav/infra-render）
+   - **DB**：IndexedDB、LocalStorage（@swiftav/infra-storage）
    - 实现 Entities 层定义的 Repository 接口
 
 ## 安装依赖
@@ -115,7 +115,7 @@ pnpm install
 pnpm dev
 
 # 或者直接进入包目录
-cd packages/infrastructure-web
+cd packages/infra-web
 pnpm dev
 ```
 
@@ -127,12 +127,12 @@ pnpm build
 
 # 构建特定层
 pnpm build:entities          # 构建实体层
-pnpm build:use-cases         # 构建用例层
-pnpm build:interface-adapters # 构建接口适配器层
-pnpm build:infrastructure-media   # 构建媒体基础设施
-pnpm build:infrastructure-render  # 构建渲染基础设施
-pnpm build:infrastructure-storage # 构建存储基础设施
-pnpm build:infrastructure-web     # 构建 Web UI 应用
+pnpm build:usecases          # 构建用例层
+pnpm build:adapters # 构建接口适配器层
+pnpm build:infra-media   # 构建媒体基础设施
+pnpm build:infra-render  # 构建渲染基础设施
+pnpm build:infra-storage # 构建存储基础设施
+pnpm build:infra-web     # 构建 Web UI 应用
 ```
 
 ## 包说明
@@ -154,7 +154,7 @@ pnpm build:infrastructure-web     # 构建 Web UI 应用
   - ✅ Repository 只定义接口，不提供实现
   - ❌ 不依赖其他业务层
 
-#### @swiftav/use-cases（用例层）
+#### @swiftav/usecases（用例层）
 
 **整洁架构层：Use Cases Layer**
 
@@ -168,7 +168,7 @@ pnpm build:infrastructure-web     # 构建 Web UI 应用
   - ✅ 每个 Use Case 只做一件事
   - ❌ 不直接依赖 Infrastructure 的具体实现
 
-#### @swiftav/interface-adapters（接口适配器层）
+#### @swiftav/adapters（接口适配器层）
 
 **整洁架构层：Interface Adapters Layer**
 
@@ -185,7 +185,7 @@ pnpm build:infrastructure-web     # 构建 Web UI 应用
 
 ### 基础设施层（Frameworks & Drivers）
 
-#### @swiftav/infrastructure-media（媒体基础设施）
+#### @swiftav/infra-media（媒体基础设施）
 
 **整洁架构层：Frameworks & Drivers Layer（最外层 - 浅蓝色）**
 
@@ -200,7 +200,7 @@ pnpm build:infrastructure-web     # 构建 Web UI 应用
   - ✅ 封装 WebCodecs API（具体框架实现）
   - ❌ 不包含业务逻辑
 
-#### @swiftav/infrastructure-render（渲染基础设施）
+#### @swiftav/infra-render（渲染基础设施）
 
 **整洁架构层：Frameworks & Drivers Layer（最外层 - 浅蓝色）**
 
@@ -215,7 +215,7 @@ pnpm build:infrastructure-web     # 构建 Web UI 应用
   - ✅ 封装 CanvasKit API（具体框架实现）
   - ❌ 不包含业务逻辑
 
-#### @swiftav/infrastructure-storage（存储基础设施）
+#### @swiftav/infra-storage（存储基础设施）
 
 **整洁架构层：Frameworks & Drivers Layer（最外层 - 浅蓝色）**
 
@@ -232,7 +232,7 @@ pnpm build:infrastructure-web     # 构建 Web UI 应用
 
 ### 表示层（Frameworks & Drivers）
 
-#### @swiftav/infrastructure-web（Web UI 应用）
+#### @swiftav/infra-web（Web UI 应用）
 
 **整洁架构层：Frameworks & Drivers Layer（最外层 - 蓝色层）**
 
@@ -241,7 +241,7 @@ pnpm build:infrastructure-web     # 构建 Web UI 应用
 - **包含**：
   - **React Components**：UI 组件
     - 展示数据，处理用户交互
-    - 调用 Controller（来自 interface-adapters 层）
+    - 调用 Controller（来自 adapters 层）
   - **Store 实现**：Zustand Store 实现
     - `editorStore` - 实现 `IEditorStore` 接口
     - 职责：纯状态管理，不包含业务逻辑
@@ -250,11 +250,11 @@ pnpm build:infrastructure-web     # 构建 Web UI 应用
     - 导出 Controller 实例供组件使用
 - **架构流程**：
   ```
-  用户操作 → React 组件 → Controller (interface-adapters) → Use Cases → 更新 Store → 组件重新渲染
+  用户操作 → React 组件 → Controller (adapters) → Use Cases → 更新 Store → 组件重新渲染
   ```
 - **文件结构**：
   ```
-  packages/infrastructure-web/src/
+  packages/infra-web/src/
   ├── di/                 # 依赖注入配置（包含 Controller 实例化）
   │   ├── container.ts     # 创建所有服务实例，包括 Controller
   │   └── index.ts
@@ -267,9 +267,9 @@ pnpm build:infrastructure-web     # 构建 Web UI 应用
   ```
 
 - **架构说明**：
-  - Controllers **定义**在 `@swiftav/interface-adapters` 包中（Interface Adapters 层）
+  - Controllers **定义**在 `@swiftav/adapters` 包中（Interface Adapters 层）
   - Controllers **实例化**在 `src/di/container.ts` 中（依赖注入容器）
-  - Store **接口**定义在 `@swiftav/interface-adapters` 包中
+  - Store **接口**定义在 `@swiftav/adapters` 包中
   - Store **实现**在 `src/stores/` 中使用 Zustand
   - 这样符合整洁架构：业务逻辑不依赖框架，框架实现依赖接口
 - **使用示例**：
@@ -301,11 +301,11 @@ pnpm build:infrastructure-web     # 构建 Web UI 应用
 ### 构建
 - `pnpm build` - 构建所有包和应用
 - `pnpm build:entities` - 构建实体层
-- `pnpm build:use-cases` - 构建用例层
-- `pnpm build:infrastructure-media` - 构建媒体基础设施
-- `pnpm build:infrastructure-render` - 构建渲染基础设施
-- `pnpm build:infrastructure-storage` - 构建存储基础设施
-- `pnpm build:infrastructure-web` - 构建 Web UI 应用
+- `pnpm build:usecases` - 构建用例层
+- `pnpm build:infra-media` - 构建媒体基础设施
+- `pnpm build:infra-render` - 构建渲染基础设施
+- `pnpm build:infra-storage` - 构建存储基础设施
+- `pnpm build:infra-web` - 构建 Web UI 应用
 
 ### 其他
 - `pnpm lint` - 运行所有包的 lint 检查
