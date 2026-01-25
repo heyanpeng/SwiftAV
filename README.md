@@ -8,13 +8,13 @@
 SwiftAV/
 ├── packages/
 │   ├── @swiftav/
-│   │   ├── entities/              # Entities 层（实体层）
+│   │   ├── entities/              # Entities 层（实体层 - 最内层）
 │   │   ├── use-cases/             # Use Cases 层（用例层）
-│   │   ├── infrastructure-media/  # Infrastructure 层（基础设施层 - 媒体）
-│   │   ├── infrastructure-render/ # Infrastructure 层（基础设施层 - 渲染）
-│   │   ├── infrastructure-storage/# Infrastructure 层（基础设施层 - 存储）
-│   │   └── sdk/                   # Facade 层（门面层）
-│   └── swiftav/                   # Presentation 层（表示层 - React 应用）
+│   │   ├── interface-adapters/    # Interface Adapters 层（接口适配器层）
+│   │   ├── infrastructure-media/  # Frameworks & Drivers 层（基础设施层 - 媒体）
+│   │   ├── infrastructure-render/ # Frameworks & Drivers 层（基础设施层 - 渲染）
+│   │   └── infrastructure-storage/# Frameworks & Drivers 层（基础设施层 - 存储）
+│   └── infrastructure-web/       # Frameworks & Drivers 层（Web UI - React 应用）
 ├── pnpm-workspace.yaml             # pnpm workspaces 配置
 └── package.json                    # 根 package.json（统一脚本）
 ```
@@ -25,24 +25,31 @@ SwiftAV/
 
 ```
 ┌─────────────────────────────────────────┐
-│   Interface Adapters Layer (适配器层)   │
-│   swiftav                               │
-│   - Controllers (控制器)                │
-│   - Stores (状态管理)                   │
-│   - React Components (组件/Presenters)  │
-│   对应：Interface Adapters (绿色层)     │
-│   - Controllers: 处理输入，调用 Use Cases│
-│   - Presenters: 展示数据                 │
+│   Frameworks & Drivers Layer (最外层)   │
+│   @swiftav/infrastructure-web (UI)   │
+│   @swiftav/infrastructure-media        │
+│   @swiftav/infrastructure-render       │
+│   @swiftav/infrastructure-storage      │
+│   - React Components (UI)               │
+│   - Zustand Store 实现                  │
+│   - WebCodecs (Devices)                │
+│   - CanvasKit (Devices)                │
+│   - IndexedDB/LocalStorage (DB)        │
+│   - Repository 实现                     │
+│   对应：Frameworks & Drivers (蓝色层)   │
 └─────────────────────────────────────────┘
               ↓ 依赖
 ┌─────────────────────────────────────────┐
-│   Facade Layer (门面层)                 │
-│   @swiftav/sdk                         │
-│   - 统一导出所有层                      │
-│   - 简化外部使用                        │
-│   注意：不属于标准整洁架构层，为辅助层  │
+│   Interface Adapters Layer (适配器层)   │
+│   @swiftav/interface-adapters          │
+│   - Controllers (控制器)                │
+│   - Presenters (表现器)                 │
+│   - Gateways (网关接口)                 │
+│   对应：Interface Adapters (绿色层)     │
+│   - Controllers: 处理输入，调用 Use Cases│
+│   - Presenters: 转换数据格式            │
 └─────────────────────────────────────────┘
-              ↓ 重新导出
+              ↓ 依赖
 ┌─────────────────────────────────────────┐
 │   Use Cases Layer (用例层)              │
 │   @swiftav/use-cases                   │
@@ -54,7 +61,7 @@ SwiftAV/
 └─────────────────────────────────────────┘
               ↓ 依赖
 ┌─────────────────────────────────────────┐
-│   Entities Layer (实体层)               │
+│   Entities Layer (实体层 - 最内层)      │
 │   @swiftav/entities                    │
 │   - 实体和值对象                        │
 │   - 仓储接口                            │
@@ -62,42 +69,33 @@ SwiftAV/
 │   对应：Entities (黄色层)               │
 │   Enterprise Business Rules             │
 └─────────────────────────────────────────┘
-              ↑ 实现
-┌─────────────────────────────────────────┐
-│   Infrastructure Layer (基础设施层)     │
-│   @swiftav/infrastructure-media        │
-│   @swiftav/infrastructure-render       │
-│   @swiftav/infrastructure-storage      │
-│   - Repository 实现                     │
-│   - 外部服务集成                        │
-│   - 框架适配                            │
-│   对应：Frameworks & Drivers (浅蓝色层)│
-│   - WebCodecs (Devices)                 │
-│   - CanvasKit (Devices)                 │
-│   - IndexedDB/LocalStorage (DB)         │
-└─────────────────────────────────────────┘
 ```
 
 ### 整洁架构层对应说明
 
-根据整洁架构的经典四层模型：
+根据整洁架构的经典四层模型（从内到外）：
 
-1. **Entities（黄色层）** - `@swiftav/entities`
+1. **Entities（黄色层 - 最内层）** - `@swiftav/entities`
    - 企业级业务规则
    - 最内层，最稳定，不依赖任何外部框架
+   - 包含实体、值对象、仓储接口、领域服务
 
 2. **Use Cases（红色层）** - `@swiftav/use-cases`
    - 应用级业务规则
    - 定义系统如何操作，协调 Entities
+   - 包含用例、应用服务、DTOs
 
-3. **Interface Adapters（绿色层）** - `swiftav` (Presentation)
+3. **Interface Adapters（绿色层）** - `@swiftav/interface-adapters`
    - 适配器层，转换数据格式
    - 包含 Controllers、Presenters、Gateways
+   - Controllers 处理输入，调用 Use Cases
+   - Presenters 将用例输出转换为 UI 格式
 
-4. **Frameworks & Drivers（浅蓝色层）** - `@swiftav/infrastructure-*`
-   - **Infrastructure 层对应此层**
+4. **Frameworks & Drivers（蓝色层 - 最外层）** - `@swiftav/infrastructure-*`
    - 最外层，包含具体框架和驱动实现
-   - WebCodecs、CanvasKit、数据库驱动等
+   - **Web UI**：React 组件、Zustand Store 实现（@swiftav/infrastructure-web）
+   - **Devices**：WebCodecs、CanvasKit（@swiftav/infrastructure-media, @swiftav/infrastructure-render）
+   - **DB**：IndexedDB、LocalStorage（@swiftav/infrastructure-storage）
    - 实现 Entities 层定义的 Repository 接口
 
 ## 安装依赖
@@ -117,7 +115,7 @@ pnpm install
 pnpm dev
 
 # 或者直接进入包目录
-cd packages/swiftav
+cd packages/infrastructure-web
 pnpm dev
 ```
 
@@ -130,11 +128,11 @@ pnpm build
 # 构建特定层
 pnpm build:entities          # 构建实体层
 pnpm build:use-cases         # 构建用例层
+pnpm build:interface-adapters # 构建接口适配器层
 pnpm build:infrastructure-media   # 构建媒体基础设施
 pnpm build:infrastructure-render  # 构建渲染基础设施
 pnpm build:infrastructure-storage # 构建存储基础设施
-pnpm build:sdk               # 构建 SDK
-pnpm build:app              # 构建应用
+pnpm build:infrastructure-web     # 构建 Web UI 应用
 ```
 
 ## 包说明
@@ -170,7 +168,22 @@ pnpm build:app              # 构建应用
   - ✅ 每个 Use Case 只做一件事
   - ❌ 不直接依赖 Infrastructure 的具体实现
 
-### 基础设施层
+#### @swiftav/interface-adapters（接口适配器层）
+
+**整洁架构层：Interface Adapters Layer**
+
+- **职责**：适配器层，转换数据格式，连接业务逻辑和外部框架
+- **包含**：
+  - **Controllers**：EditorController - 处理用户输入，调用 Use Cases，更新 Store
+  - **Presenters**：将 Use Cases 输出转换为 UI 格式（当前主要在 React 组件中完成）
+  - **Gateways**：Repository 接口定义在 Entities 层，实现在 Frameworks & Drivers 层
+- **原则**：
+  - ✅ 依赖 Use Cases 层和 Entities 层
+  - ✅ 通过接口定义 Store，不依赖具体实现（如 Zustand）
+  - ✅ Controllers 通过依赖注入接收 Use Cases 和 Repository
+  - ❌ 不依赖 Frameworks & Drivers 层的具体实现
+
+### 基础设施层（Frameworks & Drivers）
 
 #### @swiftav/infrastructure-media（媒体基础设施）
 
@@ -217,74 +230,48 @@ pnpm build:app              # 构建应用
   - ✅ 支持多种存储后端（具体数据库驱动实现）
   - ❌ 不包含业务逻辑
 
-### 门面层
+### 表示层（Frameworks & Drivers）
 
-#### @swiftav/sdk（SDK 门面层）
+#### @swiftav/infrastructure-web（Web UI 应用）
 
-**整洁架构层：Facade Layer**
+**整洁架构层：Frameworks & Drivers Layer（最外层 - 蓝色层）**
 
-- **职责**：为外部使用者提供统一的入口
+- **职责**：用户界面和交互，框架实现
+- **对应整洁架构图**：Frameworks & Drivers 层中的 UI（User Interface）
 - **包含**：
-  - 重新导出所有层的公共 API
-  - 隐藏内部包结构，简化导入
-- **原则**：
-  - ✅ 门面模式，不添加业务逻辑
-  - ✅ 可选使用，内部项目可直接使用各层包
-  - ✅ 外部友好，只需导入一个包
-
-**使用方式：**
-
-```typescript
-import {
-  Project,
-  EditorService,
-  MediaRepository,
-  RenderRepository,
-  ProjectRepository,
-} from '@swiftav/sdk';
-```
-
-### 表示层
-
-#### swiftav（React 应用）
-
-**整洁架构层：Interface Adapters Layer（绿色层）**
-
-- **职责**：用户界面和交互
-- **对应整洁架构图**：Interface Adapters 层中的 UI（User Interface）
-- **包含**：
-  - **Controllers**（Interface Adapters）：处理用户输入，调用 Use Cases，更新 Store
-    - `EditorController` - 编辑器控制器
-    - 职责：接收组件事件 → 调用 Use Cases → 更新 Store
-  - **Stores**：状态管理（Zustand）
-    - `editorStore` - 编辑器状态
+  - **React Components**：UI 组件
+    - 展示数据，处理用户交互
+    - 调用 Controller（来自 interface-adapters 层）
+  - **Store 实现**：Zustand Store 实现
+    - `editorStore` - 实现 `IEditorStore` 接口
     - 职责：纯状态管理，不包含业务逻辑
-  - **Components**（Presenters）：React 组件
-    - UI 组件，展示数据，调用 Controller
-    - 职责：展示状态，处理用户交互
+  - **Controller 实例化**：创建并配置 Controller
+    - 注入依赖（Use Cases、Repository、Store）
+    - 导出 Controller 实例供组件使用
 - **架构流程**：
   ```
-  用户操作 → React 组件 → Controller → Use Cases → 更新 Store → 组件重新渲染
+  用户操作 → React 组件 → Controller (interface-adapters) → Use Cases → 更新 Store → 组件重新渲染
   ```
 - **文件结构**：
   ```
-  packages/swiftav/src/
-  ├── controllers/        # Controller 层（Interface Adapters）
-  │   ├── EditorController.ts
-  │   ├── index.ts
-  │   └── README.md
-  ├── stores/            # Store 层（状态管理）
-  │   ├── editorStore.ts
+  packages/infrastructure-web/src/
+  ├── di/                 # 依赖注入配置（包含 Controller 实例化）
+  │   ├── container.ts     # 创建所有服务实例，包括 Controller
   │   └── index.ts
-  └── components/         # Presenter 层（UI 组件）
-      └── editor/
+  ├── stores/            # Store 实现（Frameworks & Drivers）
+  │   ├── editorStore.ts  # 实现 IEditorStore 接口
+  │   └── index.ts        # 导出 Store 和 Controller
+  ├── components/         # React 组件（UI）
+  │   └── editor/
+  └── ...
   ```
 
-- **为什么 Controllers 在应用内？**
-  - Controllers 依赖 Zustand Store，是 React 应用特定的
-  - 当前只有一个前端应用，不需要跨框架复用
-  - 保持架构简单，避免过度设计
-  - 如果未来需要支持多个前端应用，可以考虑独立成 `@swiftav/interface-adapters` 包
+- **架构说明**：
+  - Controllers **定义**在 `@swiftav/interface-adapters` 包中（Interface Adapters 层）
+  - Controllers **实例化**在 `src/di/container.ts` 中（依赖注入容器）
+  - Store **接口**定义在 `@swiftav/interface-adapters` 包中
+  - Store **实现**在 `src/stores/` 中使用 Zustand
+  - 这样符合整洁架构：业务逻辑不依赖框架，框架实现依赖接口
 - **使用示例**：
   ```typescript
   import { useEditorStore, editorController } from '@/stores';
@@ -299,14 +286,6 @@ import {
     return <button onClick={handleAddTrack}>Add Track</button>;
   }
   ```
-- **Controller 层职责**：
-  - ✅ 接收用户输入（来自 React 组件）
-  - ✅ 调用 Use Cases / Application Services
-  - ✅ 处理业务异常和错误
-  - ✅ 更新 Store 状态
-  - ❌ 不包含业务逻辑（业务逻辑在 Use Cases 层）
-  - ❌ 不直接操作 UI（由 Component 负责）
-
 - **架构原则**：
   - ✅ Controller 负责业务协调，调用 Use Cases
   - ✅ Store 只负责状态管理，不包含业务逻辑
@@ -321,14 +300,12 @@ import {
 
 ### 构建
 - `pnpm build` - 构建所有包和应用
-- `pnpm build:packages` - 仅构建所有包
 - `pnpm build:entities` - 构建实体层
 - `pnpm build:use-cases` - 构建用例层
 - `pnpm build:infrastructure-media` - 构建媒体基础设施
 - `pnpm build:infrastructure-render` - 构建渲染基础设施
 - `pnpm build:infrastructure-storage` - 构建存储基础设施
-- `pnpm build:sdk` - 构建 SDK
-- `pnpm build:app` - 构建应用
+- `pnpm build:infrastructure-web` - 构建 Web UI 应用
 
 ### 其他
 - `pnpm lint` - 运行所有包的 lint 检查

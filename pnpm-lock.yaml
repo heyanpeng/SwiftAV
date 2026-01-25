@@ -27,7 +27,7 @@ importers:
         specifier: ^8.46.4
         version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
 
-  packages/@swiftav/entities:
+  packages/entities:
     devDependencies:
       '@eslint/js':
         specifier: ^9.39.1
@@ -48,7 +48,7 @@ importers:
         specifier: ^8.46.4
         version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
 
-  packages/@swiftav/infrastructure-media:
+  packages/infrastructure-media:
     dependencies:
       '@swiftav/entities':
         specifier: workspace:*
@@ -76,7 +76,7 @@ importers:
         specifier: ^8.46.4
         version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
 
-  packages/@swiftav/infrastructure-render:
+  packages/infrastructure-render:
     dependencies:
       '@swiftav/entities':
         specifier: workspace:*
@@ -101,7 +101,7 @@ importers:
         specifier: ^8.46.4
         version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
 
-  packages/@swiftav/infrastructure-storage:
+  packages/infrastructure-storage:
     dependencies:
       '@swiftav/entities':
         specifier: workspace:*
@@ -126,7 +126,7 @@ importers:
         specifier: ^8.46.4
         version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
 
-  packages/@swiftav/sdk:
+  packages/infrastructure-web:
     dependencies:
       '@swiftav/entities':
         specifier: workspace:*
@@ -140,59 +140,12 @@ importers:
       '@swiftav/infrastructure-storage':
         specifier: workspace:*
         version: link:../infrastructure-storage
+      '@swiftav/interface-adapters':
+        specifier: workspace:*
+        version: link:../interface-adapters
       '@swiftav/use-cases':
         specifier: workspace:*
         version: link:../use-cases
-    devDependencies:
-      '@eslint/js':
-        specifier: ^9.39.1
-        version: 9.39.2
-      '@types/node':
-        specifier: ^24.10.1
-        version: 24.10.9
-      eslint:
-        specifier: ^9.39.1
-        version: 9.39.2
-      globals:
-        specifier: ^16.5.0
-        version: 16.5.0
-      typescript:
-        specifier: ~5.9.3
-        version: 5.9.3
-      typescript-eslint:
-        specifier: ^8.46.4
-        version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
-
-  packages/@swiftav/use-cases:
-    dependencies:
-      '@swiftav/entities':
-        specifier: workspace:*
-        version: link:../entities
-    devDependencies:
-      '@eslint/js':
-        specifier: ^9.39.1
-        version: 9.39.2
-      '@types/node':
-        specifier: ^24.10.1
-        version: 24.10.9
-      eslint:
-        specifier: ^9.39.1
-        version: 9.39.2
-      globals:
-        specifier: ^16.5.0
-        version: 16.5.0
-      typescript:
-        specifier: ~5.9.3
-        version: 5.9.3
-      typescript-eslint:
-        specifier: ^8.46.4
-        version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
-
-  packages/swiftav:
-    dependencies:
-      '@swiftav/sdk':
-        specifier: workspace:*
-        version: link:../@swiftav/sdk
       lucide-react:
         specifier: ^0.563.0
         version: 0.563.0(react@19.2.3)
@@ -245,6 +198,59 @@ importers:
       vite:
         specifier: ^7.2.4
         version: 7.3.1(@types/node@24.10.9)
+
+  packages/interface-adapters:
+    dependencies:
+      '@swiftav/entities':
+        specifier: workspace:*
+        version: link:../entities
+      '@swiftav/use-cases':
+        specifier: workspace:*
+        version: link:../use-cases
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.39.1
+        version: 9.39.2
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.10.9
+      eslint:
+        specifier: ^9.39.1
+        version: 9.39.2
+      globals:
+        specifier: ^16.5.0
+        version: 16.5.0
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.46.4
+        version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
+
+  packages/use-cases:
+    dependencies:
+      '@swiftav/entities':
+        specifier: workspace:*
+        version: link:../entities
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.39.1
+        version: 9.39.2
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.10.9
+      eslint:
+        specifier: ^9.39.1
+        version: 9.39.2
+      globals:
+        specifier: ^16.5.0
+        version: 16.5.0
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.46.4
+        version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
 
 packages:
 
