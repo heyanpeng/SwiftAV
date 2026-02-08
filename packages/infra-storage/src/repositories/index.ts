@@ -1,2 +1,3 @@
 export * from './TodoRepository';
-export type { ITodoRepository } from '@swiftav/entities';
+export * from './CanvasRepository';
+export type { ITodoRepository, ICanvasRepository } from '@swiftav/entities';

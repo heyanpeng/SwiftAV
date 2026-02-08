@@ -8,6 +8,8 @@ export type {
   CanvasKit,
   Surface,
   Canvas,
+  Picture,
+  PictureRecorder,
   InitOptions,
   SurfaceOptions,
   CanvasKitContext,

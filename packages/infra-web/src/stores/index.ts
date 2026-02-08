@@ -14,3 +14,5 @@ export type { ExampleStore, ExampleState, ExampleActions } from './exampleStore'
 // 导出 Controller（从依赖注入容器中获取）
 export { todoController } from '../di';
 export { useTodoStore } from './todoStore';
+export { useCanvasStore } from './canvasStore';
+export type { CanvasStore, CanvasState, CanvasActions } from './canvasStore';

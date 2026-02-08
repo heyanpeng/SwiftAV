@@ -1,6 +1,7 @@
 import { useRef, useEffect } from "react";
 import { useCanvasKit } from "../../../../hooks";
-import { CanvasRenderer, type RenderCallback } from "@swiftav/infra-render";
+import { CanvasRenderer } from "@swiftav/infra-render";
+import { useCanvasStore } from "../../../../stores";
 import "./Canvas.css";
 
 export function Canvas() {
@@ -11,6 +12,9 @@ export function Canvas() {
       width: 1920,
       height: 1080,
     });
+
+  // 从 store 获取元素列表
+  const elements = useCanvasStore((state) => state.elements);
 
   // 初始化渲染器
   useEffect(() => {
@@ -24,17 +28,9 @@ export function Canvas() {
       targetFPS: 60,
     });
 
-    // 设置渲染回调
-    const renderCallback: RenderCallback = (canvas, canvasKit) => {
-      // 清空画布（使用黑色背景）
-      canvas.clear(canvasKit.Color(0, 0, 0, 1));
+    // 不设置自定义渲染回调，使用默认的元素渲染逻辑
+    // 元素会通过 setElements 方法设置
 
-      // TODO: 在这里添加渲染逻辑
-      // 1. 渲染视频帧（如果有）
-      // 2. 渲染图形图层
-    };
-
-    renderer.setRenderCallback(renderCallback);
     rendererRef.current = renderer;
 
     // 清理函数
@@ -45,6 +41,13 @@ export function Canvas() {
       }
     };
   }, [isReady, canvasKit, canvas, surface]);
+
+  // 当元素列表变化时，更新渲染器
+  useEffect(() => {
+    if (rendererRef.current) {
+      rendererRef.current.setElements(elements);
+    }
+  }, [elements]);
 
   // 错误处理
   useEffect(() => {

@@ -6,6 +6,8 @@
 export type CanvasKit = any; // 实际类型从 canvaskit-wasm 获取
 export type Surface = any;
 export type Canvas = any;
+export type Picture = any; // CanvasKit Picture，用于记录绘制操作
+export type PictureRecorder = any; // CanvasKit PictureRecorder，用于创建 Picture
 
 /**
  * CanvasKit 初始化选项
