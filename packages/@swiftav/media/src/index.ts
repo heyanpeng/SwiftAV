@@ -1,6 +1,7 @@
 import {
   ALL_FORMATS,
   BlobSource,
+  BufferTarget,
   CanvasSource,
   Input,
   Mp4OutputFormat,
@@ -9,21 +10,34 @@ import {
 } from 'mediabunny';
 
 /**
- * 媒体基础信息（解码侧）
+ * 媒体基础信息（解码侧）- 视频轨道。
  */
 export interface MediaTrackVideoInfo {
   displayWidth: number;
   displayHeight: number;
   rotation: number;
-  codec?: string;
+  /**
+   * 视频编码格式，例如 H.264 (avc)、AV1 (av1) 等。
+   * 具体字符串由 mediabunny 提供，这里用 string|null 兼容。
+   */
+  codec?: string | null;
 }
 
+/**
+ * 媒体基础信息（解码侧）- 音频轨道。
+ */
 export interface MediaTrackAudioInfo {
   sampleRate: number;
   numberOfChannels: number;
-  codec?: string;
+  /**
+   * 音频编码格式，例如 AAC / Opus 等。
+   */
+  codec?: string | null;
 }
 
+/**
+ * 媒体整体信息（时长 + 主视频/音频轨道）。
+ */
 export interface MediaInfo {
   duration: number;
   video?: MediaTrackVideoInfo;
@@ -38,7 +52,9 @@ export type MediaSource =
   | { type: 'blob'; blob: Blob };
 
 /**
- * 从 URL 创建 Mediabunny Input。
+ * 从 URL 创建 mediabunny 的 Input 实例。
+ *
+ * 仅封装 source/formats，其他行为保持 mediabunny 默认。
  */
 export function createInputFromUrl(url: string): Input {
   return new Input({
@@ -48,7 +64,7 @@ export function createInputFromUrl(url: string): Input {
 }
 
 /**
- * 从 Blob/File 创建 Mediabunny Input。
+ * 从 Blob/File 创建 mediabunny 的 Input 实例。
  */
 export function createInputFromBlob(blob: Blob): Input {
   return new Input({
@@ -69,6 +85,8 @@ export function createInputFromSource(source: MediaSource): Input {
 
 /**
  * 解析媒体的基础信息（时长 / 主视频轨 / 主音频轨参数）。
+ *
+ * 该方法只做轻量级解析，不返回全部帧数据。
  */
 export async function probeMedia(source: MediaSource): Promise<MediaInfo> {
   const input = createInputFromSource(source);
@@ -109,7 +127,7 @@ export async function probeMedia(source: MediaSource): Promise<MediaInfo> {
  *
  * 该工具只负责帮你创建 Output + CanvasSource，不直接驱动渲染帧。
  * 上层可以结合 @swiftav/canvas 在导出专用 canvas 上绘制每一帧，
- * Mediabunny 会通过 CanvasSource 采集像素并编码。
+ * mediabunny 会通过 CanvasSource 采集像素并编码。
  */
 export interface CanvasVideoOutputOptions {
   /**
@@ -124,7 +142,7 @@ export interface CanvasVideoOutputOptions {
    * 视频编码器名称，传递给 Mediabunny 的 CanvasSource。
    * 例如 'av1'。
    */
-  codec?: string;
+  codec?: 'avc' | 'hevc' | 'vp9' | 'av1' | 'vp8';
   /**
    * 码率配置，透传给 Mediabunny。
    */
@@ -160,16 +178,22 @@ export interface CanvasVideoOutput {
 export async function createCanvasVideoOutput(
   options: CanvasVideoOutputOptions,
 ): Promise<CanvasVideoOutput> {
-  const { canvas, format = 'mp4', codec = 'av1', bitrate } = options;
+  const { canvas, format = 'mp4', codec, bitrate } = options;
 
   const output = new Output({
     // 目前仅简单支持 Mp4OutputFormat，后续可扩展 WebMOutputFormat 等
     format: new Mp4OutputFormat(),
+    // 使用 BufferTarget 作为输出目标，调用方可在 finalize 之后从 output.target 读取数据
+    target: new BufferTarget(),
   });
 
+  // CanvasSource 需要显式的 codec 与 bitrate，这里提供一份合理的默认值。
+  const resolvedCodec: NonNullable<CanvasVideoOutputOptions['codec']> = codec ?? 'av1';
+  const resolvedBitrate = bitrate ?? 2_000_000; // 约 2 Mbps，后续可由调用方传入覆盖
+
   const videoSource = new CanvasSource(canvas, {
-    codec,
-    bitrate,
+    codec: resolvedCodec,
+    bitrate: resolvedBitrate,
   });
 
   output.addVideoTrack(videoSource);
