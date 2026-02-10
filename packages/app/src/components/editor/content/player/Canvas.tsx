@@ -15,10 +15,28 @@ export function Canvas() {
     if (!containerRef.current) return;
 
     const rect = containerRef.current.getBoundingClientRect();
+    const targetAspect = 16 / 9;
+    let width = rect.width;
+    let height = rect.height;
+
+    // 容器尺寸不可用时直接返回，等待下一次布局变更
+    if (!width || !height) return;
+
+    const containerAspect = rect.width / rect.height;
+    if (containerAspect > targetAspect) {
+      // 宽比较富余，以高度为基准撑满
+      height = rect.height;
+      width = rect.height * targetAspect;
+    } else {
+      // 高比较富余，以宽度为基准撑满
+      width = rect.width;
+      height = rect.width / targetAspect;
+    }
+
     const editor = new CanvasEditor({
       container: containerRef.current,
-      width: rect.width || 1280,
-      height: rect.height || 720,
+      width,
+      height,
       backgroundColor: "#000000",
     });
 
@@ -36,7 +54,22 @@ export function Canvas() {
     const handleResize = () => {
       if (!containerRef.current || !editorRef.current) return;
       const r = containerRef.current.getBoundingClientRect();
-      editorRef.current.resize(r.width, r.height);
+      const targetAspect = 16 / 9;
+      let newWidth = r.width;
+      let newHeight = r.height;
+
+      if (!newWidth || !newHeight) return;
+
+      const containerAspect = r.width / r.height;
+      if (containerAspect > targetAspect) {
+        newHeight = r.height;
+        newWidth = r.height * targetAspect;
+      } else {
+        newWidth = r.width;
+        newHeight = r.width / targetAspect;
+      }
+
+      editorRef.current.resize(newWidth, newHeight);
     };
 
     window.addEventListener("resize", handleResize);
