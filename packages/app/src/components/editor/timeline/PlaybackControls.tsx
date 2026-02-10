@@ -21,6 +21,9 @@ interface PlaybackControlsProps {
   onTogglePlay: () => void;
   onStepBackward: () => void;
   onStepForward: () => void;
+  onZoomOut: () => void;
+  onZoomIn: () => void;
+  onFitToView: () => void;
 }
 
 function formatTime(time: number): string {
@@ -40,6 +43,9 @@ export function PlaybackControls({
   onTogglePlay,
   onStepBackward,
   onStepForward,
+  onZoomOut,
+  onZoomIn,
+  onFitToView,
 }: PlaybackControlsProps) {
   return (
     <div className="playback-controls">
@@ -97,13 +103,25 @@ export function PlaybackControls({
           <SlidersHorizontal size={16} />
         </button>
         <span className="playback-controls__divider">|</span>
-        <button className="playback-controls__btn" disabled title="Zoom Out">
+        <button
+          className="playback-controls__btn"
+          title="Zoom Out"
+          onClick={onZoomOut}
+        >
           <ZoomOut size={16} />
         </button>
-        <button className="playback-controls__btn" disabled title="Zoom In">
+        <button
+          className="playback-controls__btn"
+          title="Zoom In"
+          onClick={onZoomIn}
+        >
           <ZoomIn size={16} />
         </button>
-        <button className="playback-controls__btn" disabled title="Fit to View">
+        <button
+          className="playback-controls__btn"
+          title="Fit to View"
+          onClick={onFitToView}
+        >
           <Maximize2 size={16} />
         </button>
         <span className="playback-controls__divider">|</span>

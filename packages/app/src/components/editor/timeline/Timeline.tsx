@@ -50,6 +50,8 @@ export function Timeline() {
   const timelineRef = useRef<TimelineState | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [scaleWidth, setScaleWidth] = useState(160); // 每个主刻度宽度（px）
+  const timelineContainerRef = useRef<HTMLDivElement | null>(null);
 
   const duration = useMemo(() => {
     return editorData.reduce((max, row) => {
@@ -112,6 +114,28 @@ export function Timeline() {
     setCurrentTime(time);
   };
 
+  const handleZoomOut = () => {
+    setScaleWidth((prev) => Math.max(prev / 1.25, 40));
+  };
+
+  const handleZoomIn = () => {
+    setScaleWidth((prev) => Math.min(prev * 1.25, 400));
+  };
+
+  const handleFitToView = () => {
+    const container = timelineContainerRef.current;
+    if (!container || duration <= 0) return;
+
+    const width = container.clientWidth || window.innerWidth;
+    const startLeft = 20;
+    const tickCount = Math.max(Math.ceil(duration), 1); // 粗略按 1s 一个刻度
+    const target = (width - startLeft) / tickCount;
+
+    setScaleWidth(Math.min(Math.max(target, 40), 400));
+    const api = timelineRef.current;
+    api?.setScrollLeft(0);
+  };
+
   return (
     <div className="app-editor-layout__timeline">
       <PlaybackControls
@@ -121,14 +145,22 @@ export function Timeline() {
         onTogglePlay={handleTogglePlay}
         onStepBackward={handleStepBackward}
         onStepForward={handleStepForward}
+        onZoomOut={handleZoomOut}
+        onZoomIn={handleZoomIn}
+        onFitToView={handleFitToView}
       />
       <div className="app-editor-layout__timeline-content">
-        <div className="timeline-editor">
+        <div className="timeline-editor" ref={timelineContainerRef}>
           <ReactTimeline
             ref={timelineRef}
             // 第三方库目前未导出 TS 类型，这里先使用 any 以便后续迭代替换为真实数据结构
             editorData={editorData as any}
             effects={effects as any}
+            scale={1}
+            scaleWidth={scaleWidth}
+            startLeft={20}
+            minScaleCount={20}
+            maxScaleCount={200}
             onCursorDrag={handleCursorTimeChange}
             onCursorDragEnd={handleCursorTimeChange}
             onClickTimeArea={(time: number) => {
