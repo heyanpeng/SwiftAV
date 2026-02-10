@@ -90,21 +90,33 @@ export function Timeline() {
     setCurrentTimeGlobal(end);
   };
 
-  // 播放时从 store 同步 currentTime 到 Timeline 播放头（时间由 Canvas 的 rAF 驱动）
+  // 播放时从 store 同步 currentTime 到 Timeline 播放头（时间由 Canvas 的 rAF 驱动），使用 rAF 提升平滑度
   useEffect(() => {
     if (!isPlaying) return;
 
-    const timer = window.setInterval(() => {
+    let frameId: number | null = null;
+
+    const loop = () => {
       const t = useProjectStore.getState().currentTime;
       setCurrentTime(t);
       timelineRef.current?.setTime?.(t);
+
       if (t >= duration && duration > 0) {
         setIsPlaying(false);
         setIsPlayingGlobal(false);
+        return;
       }
-    }, 50);
 
-    return () => window.clearInterval(timer);
+      frameId = requestAnimationFrame(loop);
+    };
+
+    frameId = requestAnimationFrame(loop);
+
+    return () => {
+      if (frameId !== null) {
+        cancelAnimationFrame(frameId);
+      }
+    };
   }, [isPlaying, duration]);
 
   // 使用库提供的事件更新当前时间，避免每帧强制刷新导致卡顿
