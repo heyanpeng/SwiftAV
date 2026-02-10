@@ -27,6 +27,8 @@ export function Canvas() {
   const nextFrameRef = useRef<WrappedCanvas | null>(null);
   const asyncIdRef = useRef(0);
   const rafIdRef = useRef<number | null>(null);
+  /** 最近一次 seek 请求的时间，用于丢弃过期的 getCanvas 结果，避免拖动时乱序帧导致“快速播到”的错觉 */
+  const latestSeekTimeRef = useRef(0);
 
   useEffect(() => {
     isPlayingRef.current = isPlaying;
@@ -164,7 +166,7 @@ export function Canvas() {
           playbackTimeAtStartRef.current = dur;
         }
 
-        if (nextFrameRef.current && nextFrameRef.current.timestamp <= playbackTime) {
+        if (isPlayingRef.current && nextFrameRef.current && nextFrameRef.current.timestamp <= playbackTime) {
           const frame = nextFrameRef.current;
           nextFrameRef.current = null;
           const ctx = displayCanvas.getContext("2d");
@@ -292,12 +294,16 @@ export function Canvas() {
 
     if (isPlayingRef.current) return;
 
+    const requestedTime = currentTime;
+    latestSeekTimeRef.current = requestedTime;
+
     let cancelled = false;
 
     const renderAtTime = async () => {
       try {
-        const wrapped = await sink.getCanvas(currentTime);
+        const wrapped = await sink.getCanvas(requestedTime);
         if (!wrapped || cancelled) return;
+        if (latestSeekTimeRef.current !== requestedTime) return;
         const frameCanvas = wrapped.canvas as HTMLCanvasElement;
         const ctx = displayCanvas.getContext("2d");
         if (!ctx) return;

@@ -119,8 +119,13 @@ export function Timeline() {
     };
   }, [isPlaying, duration]);
 
-  // 使用库提供的事件更新当前时间，避免每帧强制刷新导致卡顿
-  const handleCursorTimeChange = (time: number) => {
+  // 参考 media-player：拖动时只更新本地时间显示，不写 store，避免 Canvas 在拖动过程中连续 seek
+  const handleCursorDrag = (time: number) => {
+    setCurrentTime(time);
+  };
+
+  // 松手时才同步到 store 并更新画面（与 media-player 的 seekToTime 在 pointerup 时调用一致）
+  const handleCursorDragEnd = (time: number) => {
     setCurrentTime(time);
     setCurrentTimeGlobal(time);
   };
@@ -179,8 +184,8 @@ export function Timeline() {
             startLeft={20}
             minScaleCount={20}
             maxScaleCount={200}
-            onCursorDrag={handleCursorTimeChange}
-            onCursorDragEnd={handleCursorTimeChange}
+            onCursorDrag={handleCursorDrag}
+            onCursorDragEnd={handleCursorDragEnd}
             onClickTimeArea={(time: number) => {
               const api = timelineRef.current;
               if (api) {
@@ -188,9 +193,9 @@ export function Timeline() {
                 api.setTime(time);
               }
               setIsPlaying(false);
-              handleCursorTimeChange(time);
+              setCurrentTime(time);
+              setCurrentTimeGlobal(time);
               setIsPlayingGlobal(false);
-              // 我们已经手动设置了时间，这里返回 false 阻止默认行为
               return false;
             }}
           />
