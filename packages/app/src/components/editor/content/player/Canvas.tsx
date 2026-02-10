@@ -310,6 +310,17 @@ export function Canvas() {
         ctx.clearRect(0, 0, displayCanvas.width, displayCanvas.height);
         ctx.drawImage(frameCanvas, 0, 0, displayCanvas.width, displayCanvas.height);
         editor.getStage().batchDraw();
+
+        if (cancelled || latestSeekTimeRef.current !== requestedTime) return;
+        asyncIdRef.current += 1;
+        const currentAsyncId = asyncIdRef.current;
+        void videoFrameIteratorRef.current?.return?.();
+        videoFrameIteratorRef.current = sink.canvases(requestedTime);
+        const it = videoFrameIteratorRef.current;
+        await it.next();
+        const secondFrame = (await it.next()).value ?? null;
+        if (currentAsyncId !== asyncIdRef.current) return;
+        nextFrameRef.current = secondFrame;
       } catch {
         // ignore
       }
@@ -322,52 +333,13 @@ export function Canvas() {
     };
   }, [currentTime]);
 
-  // 仅在 isPlaying 变为 true 时启动播放迭代器，不依赖 currentTime，否则 render 循环每帧更新 currentTime 会反复触发此 effect 并重置 iterator，导致无法播帧
+  // 点击播放时只启动时钟，复用 seek 时已预拉取的 iterator 和 nextFrame，避免等两帧解码造成“顿一下”
   useEffect(() => {
     if (!isPlaying) return;
-
-    const sink = sinkRef.current;
-    if (!sink) return;
 
     const startTime = useProjectStore.getState().currentTime;
     playbackTimeAtStartRef.current = startTime;
     wallStartRef.current = performance.now() / 1000;
-
-    asyncIdRef.current += 1;
-    const currentAsyncId = asyncIdRef.current;
-
-    void videoFrameIteratorRef.current?.return?.();
-    videoFrameIteratorRef.current = sink.canvases(startTime);
-
-    const it = videoFrameIteratorRef.current;
-
-    const run = async () => {
-      try {
-        const firstFrame = (await it.next()).value ?? null;
-        const secondFrame = (await it.next()).value ?? null;
-
-        if (currentAsyncId !== asyncIdRef.current) return;
-
-        const displayCanvas = displayCanvasRef.current;
-        const editor = editorRef.current;
-        if (!displayCanvas || !editor) return;
-
-        nextFrameRef.current = secondFrame;
-
-        if (firstFrame) {
-          const ctx = displayCanvas.getContext("2d");
-          if (ctx) {
-            ctx.clearRect(0, 0, displayCanvas.width, displayCanvas.height);
-            ctx.drawImage(firstFrame.canvas as HTMLCanvasElement, 0, 0);
-          }
-          editor.getStage().batchDraw();
-        }
-      } catch {
-        // 解码出错时忽略，避免未处理的 rejection
-      }
-    };
-
-    void run();
   }, [isPlaying]);
 
   return <div className="canvas-container" ref={containerRef} />;
