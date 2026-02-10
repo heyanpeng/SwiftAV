@@ -3,6 +3,7 @@
   "references": [
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" },
-    { "path": "../@swiftav/timeline" }
+    { "path": "../@swiftav/timeline" },
+    { "path": "../@swiftav/canvas" }
   ]
 }

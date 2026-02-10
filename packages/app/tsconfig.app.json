@@ -25,7 +25,10 @@
     "noUncheckedSideEffectImports": true,
 
     /* Path mapping */
-    "baseUrl": "."
+    "baseUrl": ".",
+    "paths": {
+      "@swiftav/canvas": ["../@swiftav/canvas/src"]
+    }
   },
   "include": ["src"]
 }
