@@ -22,7 +22,7 @@ export function MediaPanel() {
   return (
     <div className="asset-panel">
       <div className="asset-panel__upload-area">
-        <div className="asset-panel__upload-icon">
+        <div className="asset-panel__upload-icon" onClick={handleClick}>
           <Cloud size={48} className="asset-panel__cloud-icon" />
           <Upload size={20} className="asset-panel__arrow-icon" />
         </div>

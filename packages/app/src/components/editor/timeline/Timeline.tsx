@@ -2,50 +2,44 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { TimelineState } from "@swiftav/timeline";
 import { ReactTimeline } from "@swiftav/timeline";
 import { PlaybackControls } from "./PlaybackControls";
+import { useProjectStore } from "../../../stores";
 import "./Timeline.css";
 
 export function Timeline() {
-  const editorData = useMemo(
-    () => [
-      {
-        id: "0",
-        actions: [
-          {
-            id: "action00",
-            start: 0,
-            end: 2,
-            effectId: "effect0",
-          },
-        ],
-      },
-      {
-        id: "1",
-        actions: [
-          {
-            id: "action10",
-            start: 1.5,
-            end: 5,
-            effectId: "effect1",
-          },
-        ],
-      },
-    ],
-    [],
-  );
+  const project = useProjectStore((s) => s.project);
+  const setIsPlayingGlobal = useProjectStore((s) => s.setIsPlaying);
 
-  const effects = useMemo(
-    () => ({
-      effect0: {
-        id: "effect0",
-        name: "效果 0",
-      },
-      effect1: {
-        id: "effect1",
-        name: "效果 1",
-      },
-    }),
-    [],
-  );
+  // 将 Project 中的轨道/片段转换为 ReactTimeline 需要的 editorData 结构
+  const editorData = useMemo(() => {
+    if (!project) {
+      return [];
+    }
+
+    return project.tracks.map((track) => ({
+      id: track.id,
+      actions: track.clips.map((clip) => ({
+        id: clip.id,
+        start: clip.start,
+        end: clip.end,
+        effectId: clip.assetId,
+      })),
+    }));
+  }, [project]);
+
+  const effects = useMemo(() => {
+    if (!project) {
+      return {};
+    }
+
+    const map: Record<string, { id: string; name: string }> = {};
+    for (const asset of project.assets) {
+      map[asset.id] = {
+        id: asset.id,
+        name: asset.name || asset.id,
+      };
+    }
+    return map;
+  }, [project]);
 
   const timelineRef = useRef<TimelineState | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -56,7 +50,7 @@ export function Timeline() {
   const duration = useMemo(() => {
     return editorData.reduce((max, row) => {
       const rowMax = row.actions.reduce(
-        (rowEnd, action) => Math.max(rowEnd, action.end),
+        (rowEnd: number, action: { end: number }) => Math.max(rowEnd, action.end),
         0,
       );
       return Math.max(max, rowMax);
@@ -70,9 +64,11 @@ export function Timeline() {
     if (isPlaying) {
       api.pause();
       setIsPlaying(false);
+      setIsPlayingGlobal(false);
     } else {
       api.play({ autoEnd: true });
       setIsPlaying(true);
+      setIsPlayingGlobal(true);
     }
   };
 

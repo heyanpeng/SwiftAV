@@ -7,6 +7,9 @@ export function Canvas() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<CanvasEditor | null>(null);
   const videoUrl = useProjectStore((s) => s.videoUrl);
+  const isPlaying = useProjectStore((s) => s.isPlaying);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const videoIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -46,7 +49,7 @@ export function Canvas() {
     };
   }, []);
 
-  // 当加载了主视频资源时，在画布中添加一个全屏视频元素
+  // 当加载了主视频资源时，在画布中添加一个全屏视频元素，但不自动播放
   useEffect(() => {
     if (!videoUrl) return;
     if (!editorRef.current) return;
@@ -56,21 +59,23 @@ export function Canvas() {
     video.crossOrigin = "anonymous";
     video.muted = true;
     video.playsInline = true;
-    video.autoplay = true;
+    video.autoplay = false;
+    videoRef.current = video;
 
     const editor = editorRef.current;
     const stage = editor.getStage();
     const { width, height } = stage.size();
 
     const handleLoadedMetadata = () => {
-      editor.addVideo({
+      const id = editor.addVideo({
+        id: "video-main",
         video,
         x: 0,
         y: 0,
         width,
         height,
       });
-      editor.playVideo("video-main"); // id 不一定匹配，这里只启动内部动画
+      videoIdRef.current = id;
       video.removeEventListener("loadedmetadata", handleLoadedMetadata);
     };
 
@@ -78,8 +83,26 @@ export function Canvas() {
 
     return () => {
       video.pause();
+      videoRef.current = null;
+      videoIdRef.current = null;
     };
   }, [videoUrl]);
+
+  // 根据全局播放状态控制视频播放/暂停及 Konva 动画
+  useEffect(() => {
+    const editor = editorRef.current;
+    const video = videoRef.current;
+    const videoId = videoIdRef.current;
+    if (!editor || !video || !videoId) return;
+
+    if (isPlaying) {
+      void video.play();
+      editor.playVideo(videoId);
+    } else {
+      video.pause();
+      editor.pauseVideo(videoId);
+    }
+  }, [isPlaying]);
 
   return <div className="canvas-container" ref={containerRef} />;
 }
