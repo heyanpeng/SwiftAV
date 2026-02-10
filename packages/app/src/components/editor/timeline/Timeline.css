@@ -2,17 +2,27 @@
   display: flex;
   flex-direction: column;
   background-color: #202024;
+  /* 给时间轴区域一个固定高度，避免被内容挤压 */
+  height: 260px;
 }
 
 .app-editor-layout__timeline-content {
   flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  /* 让内部时间轴拉伸填满容器 */
+  align-items: stretch;
+  justify-content: flex-start;
 }
 
 .app-editor-layout__timeline-message {
   color: #888888;
   font-size: 14px;
   margin: 0;
+}
+
+.timeline-editor {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }

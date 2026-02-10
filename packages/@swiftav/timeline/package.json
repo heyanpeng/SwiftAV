@@ -19,7 +19,9 @@
     "dev": "tsc --watch",
     "lint": "eslint ."
   },
-  "dependencies": {},
+  "dependencies": {
+    "@xzdarcy/react-timeline-editor": "^1.0.0"
+  },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@types/node": "^24.10.1",
