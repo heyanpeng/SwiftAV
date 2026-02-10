@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { CanvasEditor } from "@swiftav/canvas";
-import { CanvasSink, type Input } from "mediabunny";
+import { CanvasSink, type Input, type WrappedCanvas } from "mediabunny";
 import { createInputFromUrl } from "@swiftav/media";
 import { useProjectStore } from "../../../../stores";
 import "./Canvas.css";
@@ -10,12 +10,37 @@ export function Canvas() {
   const editorRef = useRef<CanvasEditor | null>(null);
   const videoUrl = useProjectStore((s) => s.videoUrl);
   const currentTime = useProjectStore((s) => s.currentTime);
+  const isPlaying = useProjectStore((s) => s.isPlaying);
+  const duration = useProjectStore((s) => s.duration);
+  const setCurrentTimeGlobal = useProjectStore((s) => s.setCurrentTime);
+  const setIsPlayingGlobal = useProjectStore((s) => s.setIsPlaying);
 
-  // mediabunny 解码相关引用
   const sinkRef = useRef<CanvasSink | null>(null);
   const inputRef = useRef<Input | null>(null);
-  // 真正挂到 CanvasEditor 上作为 image 源的展示 canvas，一直复用同一个实例
   const displayCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const isPlayingRef = useRef(false);
+  const playbackTimeAtStartRef = useRef(0);
+  const wallStartRef = useRef(0);
+  const durationRef = useRef(0);
+  const videoFrameIteratorRef = useRef<AsyncGenerator<WrappedCanvas, void, unknown> | null>(null);
+  const nextFrameRef = useRef<WrappedCanvas | null>(null);
+  const asyncIdRef = useRef(0);
+  const rafIdRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+
+  useEffect(() => {
+    durationRef.current = duration;
+  }, [duration]);
+
+  useEffect(() => {
+    if (!isPlaying) {
+      playbackTimeAtStartRef.current = currentTime;
+    }
+  }, [isPlaying, currentTime]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -25,16 +50,13 @@ export function Canvas() {
     let width = rect.width;
     let height = rect.height;
 
-    // 容器尺寸不可用时直接返回，等待下一次布局变更
     if (!width || !height) return;
 
     const containerAspect = rect.width / rect.height;
     if (containerAspect > targetAspect) {
-      // 宽比较富余，以高度为基准撑满
       height = rect.height;
       width = rect.height * targetAspect;
     } else {
-      // 高比较富余，以宽度为基准撑满
       width = rect.width;
       height = rect.width / targetAspect;
     }
@@ -48,7 +70,6 @@ export function Canvas() {
 
     editorRef.current = editor;
 
-    // 示例：添加一段占位文本
     editor.addText({
       text: "SwiftAV Canvas",
       x: 40,
@@ -82,14 +103,15 @@ export function Canvas() {
 
     return () => {
       window.removeEventListener("resize", handleResize);
-      // Konva 会在 Stage destroy 时清理内部资源
       editor.getStage().destroy();
       editorRef.current = null;
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
     };
   }, []);
 
-  // 当加载了主视频资源时，使用 mediabunny 创建 CanvasSink，
-  // 并在画布中添加一个使用 displayCanvas 作为帧源的全屏视频元素。
   useEffect(() => {
     let cancelled = false;
 
@@ -100,31 +122,27 @@ export function Canvas() {
       const editor = editorRef.current;
       const stage = editor.getStage();
       const stageSize = stage.size();
-      // mediabunny CanvasSink 要求 width/height 为正整数，stage 尺寸可能是 0 或浮点数
       const width = Math.max(1, Math.round(stageSize.width));
       const height = Math.max(1, Math.round(stageSize.height));
 
-      // 通过 URL 创建 mediabunny Input，并获取主视频轨
       const input = createInputFromUrl(videoUrl);
       inputRef.current = input;
       const videoTrack = await input.getPrimaryVideoTrack();
       if (!videoTrack || cancelled) return;
 
-      // 创建 CanvasSink，用于按时间获取渲染好的帧 canvas
       const sink = new CanvasSink(videoTrack, {
         width,
         height,
         fit: "cover",
+        poolSize: 2,
       });
       sinkRef.current = sink;
 
-      // 创建一个供 CanvasEditor 使用的展示 canvas，后续始终复用同一个实例
       const displayCanvas = document.createElement("canvas");
       displayCanvas.width = width;
       displayCanvas.height = height;
       displayCanvasRef.current = displayCanvas;
 
-      // 将展示 canvas 挂到 CanvasEditor 上
       editor.addVideo({
         id: "video-main",
         video: displayCanvas,
@@ -134,7 +152,39 @@ export function Canvas() {
         height,
       });
 
-      // 预渲染第 0 秒的画面，避免一开始是纯黑
+      playbackTimeAtStartRef.current = 0;
+
+      const render = () => {
+        const dur = durationRef.current;
+        const playbackTime = getPlaybackTime();
+
+        if (isPlayingRef.current && playbackTime >= dur && dur > 0) {
+          setIsPlayingGlobal(false);
+          setCurrentTimeGlobal(dur);
+          playbackTimeAtStartRef.current = dur;
+        }
+
+        if (nextFrameRef.current && nextFrameRef.current.timestamp <= playbackTime) {
+          const frame = nextFrameRef.current;
+          nextFrameRef.current = null;
+          const ctx = displayCanvas.getContext("2d");
+          if (ctx) {
+            ctx.clearRect(0, 0, displayCanvas.width, displayCanvas.height);
+            ctx.drawImage(frame.canvas as HTMLCanvasElement, 0, 0);
+          }
+          editor.getStage().batchDraw();
+          void updateNextFrame();
+        }
+
+        if (isPlayingRef.current) {
+          setCurrentTimeGlobal(playbackTime);
+        }
+
+        rafIdRef.current = requestAnimationFrame(render);
+      };
+
+      rafIdRef.current = requestAnimationFrame(render);
+
       try {
         const wrapped = await sink.getCanvas(0);
         if (!wrapped || cancelled) return;
@@ -144,7 +194,77 @@ export function Canvas() {
         ctx.drawImage(frameCanvas, 0, 0, displayCanvas.width, displayCanvas.height);
         editor.getStage().batchDraw();
       } catch {
-        // 忽略解码错误，由上层做错误提示
+        // ignore
+      }
+
+      if (cancelled) return;
+      startVideoIterator(0);
+    };
+
+    const startVideoIterator = async (seekTime: number) => {
+      const s = sinkRef.current;
+      const d = displayCanvasRef.current;
+      const e = editorRef.current;
+      if (!s || !d || !e) return;
+
+      asyncIdRef.current += 1;
+      const currentAsyncId = asyncIdRef.current;
+
+      void videoFrameIteratorRef.current?.return?.();
+      videoFrameIteratorRef.current = s.canvases(seekTime);
+
+      const it = videoFrameIteratorRef.current;
+      const firstFrame = (await it.next()).value ?? null;
+      const secondFrame = (await it.next()).value ?? null;
+
+      if (currentAsyncId !== asyncIdRef.current) return;
+
+      nextFrameRef.current = secondFrame;
+
+      if (firstFrame) {
+        const ctx = d.getContext("2d");
+        if (ctx) {
+          ctx.clearRect(0, 0, d.width, d.height);
+          ctx.drawImage(firstFrame.canvas as HTMLCanvasElement, 0, 0);
+        }
+        e.getStage().batchDraw();
+      }
+    };
+
+    const getPlaybackTime = (): number => {
+      if (isPlayingRef.current) {
+        return performance.now() / 1000 - wallStartRef.current + playbackTimeAtStartRef.current;
+      }
+      return playbackTimeAtStartRef.current;
+    };
+
+    const updateNextFrame = async () => {
+      const it = videoFrameIteratorRef.current;
+      const d = displayCanvasRef.current;
+      const e = editorRef.current;
+      if (!it || !d || !e) return;
+
+      const currentAsyncId = asyncIdRef.current;
+
+      while (true) {
+        const result = await it.next();
+        const newNextFrame = result.value ?? null;
+
+        if (!newNextFrame) break;
+        if (currentAsyncId !== asyncIdRef.current) break;
+
+        const playbackTime = getPlaybackTime();
+        if (newNextFrame.timestamp <= playbackTime) {
+          const ctx = d.getContext("2d");
+          if (ctx) {
+            ctx.clearRect(0, 0, d.width, d.height);
+            ctx.drawImage(newNextFrame.canvas as HTMLCanvasElement, 0, 0);
+          }
+          e.getStage().batchDraw();
+        } else {
+          nextFrameRef.current = newNextFrame;
+          break;
+        }
       }
     };
 
@@ -155,15 +275,22 @@ export function Canvas() {
       sinkRef.current = null;
       displayCanvasRef.current = null;
       inputRef.current = null;
+      videoFrameIteratorRef.current = null;
+      nextFrameRef.current = null;
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
     };
-  }, [videoUrl]);
+  }, [videoUrl, setCurrentTimeGlobal, setIsPlayingGlobal]);
 
-  // 当全局 currentTime 变化时，主动 seek 到对应时间，以便响应时间线点击/拖动
   useEffect(() => {
     const sink = sinkRef.current;
     const displayCanvas = displayCanvasRef.current;
     const editor = editorRef.current;
     if (!sink || !displayCanvas || !editor) return;
+
+    if (isPlayingRef.current) return;
 
     let cancelled = false;
 
@@ -174,10 +301,11 @@ export function Canvas() {
         const frameCanvas = wrapped.canvas as HTMLCanvasElement;
         const ctx = displayCanvas.getContext("2d");
         if (!ctx) return;
+        ctx.clearRect(0, 0, displayCanvas.width, displayCanvas.height);
         ctx.drawImage(frameCanvas, 0, 0, displayCanvas.width, displayCanvas.height);
         editor.getStage().batchDraw();
       } catch {
-        // 解码失败时暂时忽略，后续可接入全局错误提示
+        // ignore
       }
     };
 
@@ -187,6 +315,54 @@ export function Canvas() {
       cancelled = true;
     };
   }, [currentTime]);
+
+  // 仅在 isPlaying 变为 true 时启动播放迭代器，不依赖 currentTime，否则 render 循环每帧更新 currentTime 会反复触发此 effect 并重置 iterator，导致无法播帧
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const sink = sinkRef.current;
+    if (!sink) return;
+
+    const startTime = useProjectStore.getState().currentTime;
+    playbackTimeAtStartRef.current = startTime;
+    wallStartRef.current = performance.now() / 1000;
+
+    asyncIdRef.current += 1;
+    const currentAsyncId = asyncIdRef.current;
+
+    void videoFrameIteratorRef.current?.return?.();
+    videoFrameIteratorRef.current = sink.canvases(startTime);
+
+    const it = videoFrameIteratorRef.current;
+
+    const run = async () => {
+      try {
+        const firstFrame = (await it.next()).value ?? null;
+        const secondFrame = (await it.next()).value ?? null;
+
+        if (currentAsyncId !== asyncIdRef.current) return;
+
+        const displayCanvas = displayCanvasRef.current;
+        const editor = editorRef.current;
+        if (!displayCanvas || !editor) return;
+
+        nextFrameRef.current = secondFrame;
+
+        if (firstFrame) {
+          const ctx = displayCanvas.getContext("2d");
+          if (ctx) {
+            ctx.clearRect(0, 0, displayCanvas.width, displayCanvas.height);
+            ctx.drawImage(firstFrame.canvas as HTMLCanvasElement, 0, 0);
+          }
+          editor.getStage().batchDraw();
+        }
+      } catch {
+        // 解码出错时忽略，避免未处理的 rejection
+      }
+    };
+
+    void run();
+  }, [isPlaying]);
 
   return <div className="canvas-container" ref={containerRef} />;
 }

@@ -67,7 +67,7 @@ export function Timeline() {
       setIsPlaying(false);
       setIsPlayingGlobal(false);
     } else {
-      api.play({ autoEnd: true });
+      // 不调用 api.play()，由 Canvas 的 rAF 驱动 currentTime，Timeline 只同步显示
       setIsPlaying(true);
       setIsPlayingGlobal(true);
     }
@@ -90,19 +90,19 @@ export function Timeline() {
     setCurrentTimeGlobal(end);
   };
 
-  // 播放时定期从 TimelineState 读取时间，用较低频率刷新数字，避免卡顿
+  // 播放时从 store 同步 currentTime 到 Timeline 播放头（时间由 Canvas 的 rAF 驱动）
   useEffect(() => {
     if (!isPlaying) return;
+
     const timer = window.setInterval(() => {
-      const t = timelineRef.current?.getTime?.() ?? 0;
+      const t = useProjectStore.getState().currentTime;
       setCurrentTime(t);
-      setCurrentTimeGlobal(t);
-      // 播放结束后自动恢复为“可播放”状态
-      if (t >= duration) {
+      timelineRef.current?.setTime?.(t);
+      if (t >= duration && duration > 0) {
         setIsPlaying(false);
         setIsPlayingGlobal(false);
       }
-    }, 100); // 10fps 足够平滑
+    }, 50);
 
     return () => window.clearInterval(timer);
   }, [isPlaying, duration]);

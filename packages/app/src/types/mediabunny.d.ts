@@ -10,6 +10,7 @@ declare module "mediabunny" {
     width?: number;
     height?: number;
     fit?: "fill" | "contain" | "cover";
+    poolSize?: number;
   }
 
   export interface WrappedCanvas {
@@ -21,6 +22,7 @@ declare module "mediabunny" {
   export class CanvasSink {
     constructor(videoTrack: unknown, options?: CanvasSinkOptions);
     getCanvas(timestamp: number): Promise<WrappedCanvas | null>;
+    canvases(startTimestamp?: number, endTimestamp?: number): AsyncGenerator<WrappedCanvas, void, unknown>;
   }
 }
 
