@@ -5,6 +5,7 @@ import {
   Trash2,
   SkipBack,
   Play,
+  Pause,
   SkipForward,
   ZoomOut,
   ZoomIn,
@@ -13,7 +14,33 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 
-export function PlaybackControls() {
+interface PlaybackControlsProps {
+  isPlaying: boolean;
+  currentTime: number;
+  duration: number;
+  onTogglePlay: () => void;
+  onStepBackward: () => void;
+  onStepForward: () => void;
+}
+
+function formatTime(time: number): string {
+  const clamped = Math.max(0, time);
+  const minutes = Math.floor(clamped / 60);
+  const seconds = Math.floor(clamped % 60);
+  const ms = Math.floor((clamped * 100) % 100);
+  return `${minutes}:${seconds.toString().padStart(2, "0")}.${ms
+    .toString()
+    .padStart(2, "0")}`;
+}
+
+export function PlaybackControls({
+  isPlaying,
+  currentTime,
+  duration,
+  onTogglePlay,
+  onStepBackward,
+  onStepForward,
+}: PlaybackControlsProps) {
   return (
     <div className="playback-controls">
       <div className="playback-controls__left">
@@ -30,24 +57,36 @@ export function PlaybackControls() {
       <div className="playback-controls__center">
         <button
           className="playback-controls__btn"
-          disabled
           title="Previous Frame"
+          onClick={onStepBackward}
         >
           <SkipBack size={16} />
         </button>
         <button
           className="playback-controls__btn playback-controls__play-btn"
-          disabled
-          title="Play"
+          title={isPlaying ? "Pause" : "Play"}
+          onClick={onTogglePlay}
         >
-          <Play size={16} fill="currentColor" />
+          {isPlaying ? (
+            <Pause size={16} fill="currentColor" />
+          ) : (
+            <Play size={16} fill="currentColor" />
+          )}
         </button>
-        <button className="playback-controls__btn" disabled title="Next Frame">
+        <button
+          className="playback-controls__btn"
+          title="Next Frame"
+          onClick={onStepForward}
+        >
           <SkipForward size={16} />
         </button>
-        <span className="playback-controls__time">0:00.00</span>
+        <span className="playback-controls__time">
+          {formatTime(currentTime)}
+        </span>
         <span className="playback-controls__separator">/</span>
-        <span className="playback-controls__time">0:00.00</span>
+        <span className="playback-controls__time">
+          {formatTime(duration)}
+        </span>
       </div>
       <div className="playback-controls__right">
         <button

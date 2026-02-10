@@ -10,4 +10,5 @@
 import '@xzdarcy/react-timeline-editor/dist/react-timeline-editor.css';
 
 export { Timeline as ReactTimeline } from '@xzdarcy/react-timeline-editor';
+export type { TimelineState } from '@xzdarcy/react-timeline-editor';
 
