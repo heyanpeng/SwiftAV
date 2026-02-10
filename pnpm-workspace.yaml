@@ -6,3 +6,4 @@ packages:
   - 'packages/@swiftav/project'
   - 'packages/@swiftav/audio'
   - 'packages/@swiftav/renderer'
+  - 'packages/@swiftav/record'
