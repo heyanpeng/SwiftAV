@@ -52,6 +52,31 @@ importers:
         specifier: ^8.46.4
         version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
 
+  packages/@swiftav/media:
+    dependencies:
+      mediabunny:
+        specifier: ^1.32.2
+        version: 1.32.2
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.39.1
+        version: 9.39.2
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.10.9
+      eslint:
+        specifier: ^9.39.1
+        version: 9.39.2
+      globals:
+        specifier: ^16.5.0
+        version: 16.5.0
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.46.4
+        version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
+
   packages/@swiftav/timeline:
     dependencies:
       '@xzdarcy/react-timeline-editor':
@@ -79,6 +104,9 @@ importers:
 
   packages/app:
     dependencies:
+      '@swiftav/canvas':
+        specifier: workspace:*
+        version: link:../@swiftav/canvas
       '@swiftav/timeline':
         specifier: workspace:*
         version: link:../@swiftav/timeline
@@ -606,6 +634,12 @@ packages:
   '@types/babel__traverse@7.28.0':
     resolution: {integrity: sha512-8PvcXf70gTDZBgt9ptxJ8elBeBjcLOAcOtoO/mPJjtji1+CdGbHgm77om1GrsPxsiE+uXIpNSK64UYaIwQXd4Q==}
 
+  '@types/dom-mediacapture-transform@0.1.11':
+    resolution: {integrity: sha512-Y2p+nGf1bF2XMttBnsVPHUWzRRZzqUoJAKmiP10b5umnO6DDrWI0BrGDJy1pOHoOULVmGSfFNkQrAlC5dcj6nQ==}
+
+  '@types/dom-webcodecs@0.1.13':
+    resolution: {integrity: sha512-O5hkiFIcjjszPIYyUSyvScyvrBoV3NOEEZx/pMlsu44TKzWNkLVBBxnxJz42in5n3QIolYOcBYFCPZZ0h8SkwQ==}
+
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
 
@@ -1011,6 +1045,9 @@ packages:
     resolution: {integrity: sha512-8dXPB2GI4dI8jV4MgUDGBeLdGk8ekfqVZ0BdLcrRzocGgG75ltNEmWS+gE7uokKF/0oSUuczNDT+g9hFJ23FkA==}
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  mediabunny@1.32.2:
+    resolution: {integrity: sha512-cxzGriei0JAYaYApO7xsN8ITq1npEnQPBAE43Z3vnGHhh8UVm8Cgb5o06wrufDVYlFg58I2sF6d/xWH39uXuEw==}
 
   minimatch@3.1.2:
     resolution: {integrity: sha512-J7p63hRiAjw1NDEww1W7i37+ByIrOWO5XQQAzZ3VOcL0PNybwpfmV/N05zFAzwQ9USyEcX6t3UO+K5aqBQOIHw==}
@@ -1646,6 +1683,12 @@ snapshots:
     dependencies:
       '@babel/types': 7.28.6
 
+  '@types/dom-mediacapture-transform@0.1.11':
+    dependencies:
+      '@types/dom-webcodecs': 0.1.13
+
+  '@types/dom-webcodecs@0.1.13': {}
+
   '@types/estree@1.0.8': {}
 
   '@types/json-schema@7.0.15': {}
@@ -2097,6 +2140,11 @@ snapshots:
   lucide-react@0.563.0(react@19.2.3):
     dependencies:
       react: 19.2.3
+
+  mediabunny@1.32.2:
+    dependencies:
+      '@types/dom-mediacapture-transform': 0.1.11
+      '@types/dom-webcodecs': 0.1.13
 
   minimatch@3.1.2:
     dependencies:
