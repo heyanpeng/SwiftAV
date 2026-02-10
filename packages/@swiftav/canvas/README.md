@@ -6,14 +6,17 @@
 
 - 使用 Konva 管理画布、图层与图形元素
 - 提供统一的画布工具类，封装常见操作：
-  - 创建舞台与基础图层（背景层、视频占位层、前景图层、文字图层）
-  - 添加 / 更新 / 移除图像与文本
-  - 统一的坐标与缩放控制
+  - 创建舞台与基础图层（背景层 + 元素层）
+  - 添加 / 更新 / 移除文本、图片、视频元素
+  - 支持基于时间线的批量同步（`syncElements`）
 
 ## 使用示例
 
 ```ts
-import { CanvasEditor } from '@swiftav/canvas';
+import {
+  CanvasEditor,
+  type RenderElement,
+} from '@swiftav/canvas';
 
 const editor = new CanvasEditor({
   container: document.getElementById('canvas-root')!,
@@ -21,16 +24,21 @@ const editor = new CanvasEditor({
   height: 720,
 });
 
-// 添加一段文本
-const textId = editor.addText({
-  text: 'Hello SwiftAV',
-  x: 100,
-  y: 100,
-  fontSize: 48,
-  fill: '#ffffff',
-});
+// 基于时间线计算当前时刻的渲染元素
+const elements: RenderElement[] = [
+  {
+    id: 'title',
+    kind: 'text',
+    zIndex: 10,
+    x: 100,
+    y: 100,
+    text: 'Hello SwiftAV',
+    fontSize: 48,
+    fill: '#ffffff',
+  },
+];
 
-// 更新文本位置
-editor.updateText(textId, { x: 200, y: 120 });
+// 一次性同步到画布
+editor.syncElements(elements);
 ```
 
