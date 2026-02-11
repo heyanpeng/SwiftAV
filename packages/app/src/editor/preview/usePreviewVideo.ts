@@ -51,6 +51,8 @@ export function usePreviewVideo(
   const wallStartRef = useRef(0);
   // 项目时长 ref
   const durationRef = useRef(0);
+  // 本次播放是否已启动过时钟（仅由第一个完成首帧的 clip 设置，避免多轨重复设）
+  const playbackClockStartedRef = useRef(false);
 
   // 表示 sink 建立是否完成的 tick（变更时强制同步 canvas 帧）
   const [sinksReadyTick, setSinksReadyTick] = useState(0);
@@ -258,7 +260,7 @@ export function usePreviewVideo(
   }, [editorRef, project, currentTime, sinksReadyTick]);
 
   /**
-   * 播放开始时初始化所有可见片段的 iterator，并预取前两帧（便于顺滑步进渲染）。
+   * 播放开始时初始化所有可见片段的 iterator：只等第一帧就立即绘制并启动时钟，第二帧后台预取以减少点击播放后的延迟。
    */
   useEffect(() => {
     if (!isPlaying) {
@@ -271,14 +273,11 @@ export function usePreviewVideo(
       return;
     }
 
-    // 拉取当前时间，存作播放开始点
     const t0 = useProjectStore.getState().currentTime;
-    playbackTimeAtStartRef.current = t0;
-    wallStartRef.current = performance.now() / 1000;
     clipIteratorsRef.current.clear();
     clipNextFrameRef.current.clear();
+    playbackClockStartedRef.current = false;
 
-    // 获取播放起始时刻所有活跃片段，逐个建立 iterator 并预拉两帧
     const active = getActiveVideoClips(proj, t0);
     for (const { clip, asset } of active) {
       const sinkEntry = sinksByAssetRef.current.get(asset.id);
@@ -291,8 +290,6 @@ export function usePreviewVideo(
         const it = sinkEntry.sink.canvases(sourceTime);
         clipIteratorsRef.current.set(clip.id, it);
         const first = (await it.next()).value ?? null;
-        const second = (await it.next()).value ?? null;
-        clipNextFrameRef.current.set(clip.id, second);
         const canvas = clipCanvasesRef.current.get(clip.id);
         if (first && canvas) {
           const ctx = canvas.getContext("2d");
@@ -307,8 +304,22 @@ export function usePreviewVideo(
             );
           }
           editor.getStage().batchDraw();
+          if (!playbackClockStartedRef.current) {
+            playbackClockStartedRef.current = true;
+            playbackTimeAtStartRef.current = t0;
+            wallStartRef.current = performance.now() / 1000;
+          }
         }
+        // 第二帧后台预取，不阻塞首帧显示
+        void it.next().then((result) => {
+          clipNextFrameRef.current.set(clip.id, result.value ?? null);
+        });
       })();
+    }
+    if (active.length === 0) {
+      playbackClockStartedRef.current = true;
+      playbackTimeAtStartRef.current = t0;
+      wallStartRef.current = performance.now() / 1000;
     }
   }, [editorRef, isPlaying]);
 
@@ -386,13 +397,15 @@ export function usePreviewVideo(
         }
       }
 
-      // 到达片尾停播（避免超过 duration）
-      if (playbackTime >= dur && dur > 0) {
-        setIsPlaying(false);
-        setCurrentTime(dur);
-        playbackTimeAtStartRef.current = dur;
-      } else {
-        setCurrentTime(playbackTime);
+      // 仅当时钟已由首帧绘制启动后再推进播放头，避免解码等待期间用旧 wallStart 算出错误时间
+      if (playbackClockStartedRef.current) {
+        if (playbackTime >= dur && dur > 0) {
+          setIsPlaying(false);
+          setCurrentTime(dur);
+          playbackTimeAtStartRef.current = dur;
+        } else {
+          setCurrentTime(playbackTime);
+        }
       }
 
       rafIdRef.current = requestAnimationFrame(render);

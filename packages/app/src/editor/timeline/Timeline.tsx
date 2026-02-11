@@ -5,26 +5,40 @@ import { PlaybackControls } from "./PlaybackControls";
 import { useProjectStore } from "@/stores";
 import "./Timeline.css";
 
-/** 刻度标签：将时间（秒）格式化为 分:秒，如 1:30 */
+/**
+ * 刻度标签组件
+ * 接收 scale（秒数），将其格式化为 "分:秒"（如 1:30）
+ */
 function ScaleLabel({ scale }: { scale: number }) {
+  // 分钟
   const min = Math.floor(scale / 60);
+  // 秒数
   const sec = Math.floor(scale % 60);
+  // Padding 2 位
   const second = String(sec).padStart(2, "0");
   return <>{`${min}:${second}`}</>;
 }
 
+/**
+ * Timeline 时间轴主组件
+ * 显示项目的多轨时间轴、播放控制、缩放与同步功能
+ */
 export function Timeline() {
+  // 取出 project、以及全局播放控制和时间设置函数
   const project = useProjectStore((s) => s.project);
   const setIsPlayingGlobal = useProjectStore((s) => s.setIsPlaying);
   const setCurrentTimeGlobal = useProjectStore((s) => s.setCurrentTime);
 
-  // 将 Project 中的轨道/片段转换为 ReactTimeline 需要的 editorData 结构
-  // 轨道按 order 降序排列，order 越大越靠上
+  /**
+   * 将 project.tracks/clips 转为 ReactTimeline 所需的数据结构
+   * 轨道按 order 降序（order 越大越靠上）
+   */
   const editorData = useMemo(() => {
     if (!project) {
       return [];
     }
 
+    // 克隆并排序轨道
     const sortedTracks = [...project.tracks].sort((a, b) => b.order - a.order);
     return sortedTracks.map((track) => ({
       id: track.id,
@@ -32,11 +46,15 @@ export function Timeline() {
         id: clip.id,
         start: clip.start,
         end: clip.end,
-        effectId: clip.assetId,
+        effectId: clip.assetId, // 关联素材
       })),
     }));
   }, [project]);
 
+  /**
+   * 构建 effect map：将 assetId 映射为 {id, name}
+   * 用于 timeline 显示素材关联
+   */
   const effects = useMemo(() => {
     if (!project) {
       return {};
@@ -52,12 +70,23 @@ export function Timeline() {
     return map;
   }, [project]);
 
+  // timelineRef 用于操作 timeline 实例内部 API
   const timelineRef = useRef<TimelineState | null>(null);
+
+  // 本地播放状态和当前时间（UI 层实时状态，防拖动时频繁写全局 store）
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [scaleWidth, setScaleWidth] = useState(100); // 每个主刻度宽度（px）
+
+  // 每一主刻度的宽度（像素），支持缩放
+  const [scaleWidth, setScaleWidth] = useState(100);
+
+  // timeline 外层 dom 容器引用，用于测量宽度
   const timelineContainerRef = useRef<HTMLDivElement | null>(null);
 
+  /**
+   * 计算当前时间轴的最大时长
+   * 取所有轨道所有片段的 end 最大值
+   */
   const duration = useMemo(() => {
     return editorData.reduce((max, row) => {
       const rowMax = row.actions.reduce(
@@ -69,49 +98,77 @@ export function Timeline() {
     }, 0);
   }, [editorData]);
 
+  /**
+   * 播放/暂停切换逻辑
+   * 这里只切 UI 状态及全局 store，不实际操作媒体播放
+   */
   const handleTogglePlay = () => {
     const api = timelineRef.current;
-    if (!api) return;
+    if (!api) {
+      return;
+    }
 
     if (isPlaying) {
+      // 暂停
       api.pause();
       setIsPlaying(false);
       setIsPlayingGlobal(false);
     } else {
-      // 不调用 api.play()，由 Preview 的 rAF 驱动 currentTime，Timeline 只同步显示
+      // 播放（由 Preview rAF 驱动 currentTime，这里只设状态即可）
       setIsPlaying(true);
       setIsPlayingGlobal(true);
     }
   };
 
+  /**
+   * 一键回到时间轴开头
+   * 本地和全局 currentTime 皆重置为 0
+   */
   const handleStepBackward = () => {
     const api = timelineRef.current;
-    if (!api) return;
+    if (!api) {
+      return;
+    }
     api.setTime(0);
     setCurrentTime(0);
     setCurrentTimeGlobal(0);
   };
 
+  /**
+   * 一键跳转到时间轴末尾
+   * 本地和全局 currentTime 皆设置为 duration
+   */
   const handleStepForward = () => {
     const api = timelineRef.current;
-    if (!api) return;
+    if (!api) {
+      return;
+    }
     const end = duration;
     api.setTime(end);
     setCurrentTime(end);
     setCurrentTimeGlobal(end);
   };
 
-  // 播放时从 store 同步 currentTime 到 Timeline 播放头（时间由 Preview 的 rAF 驱动），使用 rAF 提升平滑度
+  /**
+   * 播放同步逻辑
+   * - 由全局 store 的 currentTime 驱动 timeline 播放头位置
+   * - 用 requestAnimationFrame 循环，保持播放期间的平滑性
+   * - 达到时长末尾时自动停止
+   */
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!isPlaying) {
+      return;
+    }
 
     let frameId: number | null = null;
 
     const loop = () => {
+      // 实时读取全局 currentTime
       const t = useProjectStore.getState().currentTime;
       setCurrentTime(t);
       timelineRef.current?.setTime?.(t);
 
+      // 若已到末尾，停止播放
       if (t >= duration && duration > 0) {
         setIsPlaying(false);
         setIsPlayingGlobal(false);
@@ -123,6 +180,7 @@ export function Timeline() {
 
     frameId = requestAnimationFrame(loop);
 
+    // 组件卸载时清理动画帧
     return () => {
       if (frameId !== null) {
         cancelAnimationFrame(frameId);
@@ -130,41 +188,64 @@ export function Timeline() {
     };
   }, [isPlaying, duration]);
 
-  // 参考 media-player：拖动时只更新本地时间显示，不写 store，避免 Preview 在拖动过程中连续 seek
+  /**
+   * 拖动播放头时，只实时刷新本地 currentTime 不写全局 store
+   * - 提升拖动体验，防止 Preview 因 seek 频繁过多
+   */
   const handleCursorDrag = (time: number) => {
     setCurrentTime(time);
   };
 
-  // 松手时才同步到 store 并更新画面（与 media-player 的 seekToTime 在 pointerup 时调用一致）
+  /**
+   * 拖动播放头松手时（pointerup），同步到全局 store
+   * - 保持 UI 一致，并触发实际画面跳转
+   */
   const handleCursorDragEnd = (time: number) => {
     setCurrentTime(time);
     setCurrentTimeGlobal(time);
   };
 
+  /**
+   * 时间轴缩小（scaleWidth 变小，刻度间距缩短）
+   * 取最小 40px/格
+   */
   const handleZoomOut = () => {
     setScaleWidth((prev) => Math.max(prev / 1.25, 40));
   };
 
+  /**
+   * 时间轴放大（scaleWidth 变大，刻度间距变宽）
+   * 最大 400px/格
+   */
   const handleZoomIn = () => {
     setScaleWidth((prev) => Math.min(prev * 1.25, 400));
   };
 
+  /**
+   * 适应视图区宽度自动缩放
+   * 算法：以当前可见区刚好容纳全部时长为目标
+   * 刻度间距限制 40-400px
+   */
   const handleFitToView = () => {
     const container = timelineContainerRef.current;
-    if (!container || duration <= 0) return;
+    if (!container || duration <= 0) {
+      return;
+    }
 
     const width = container.clientWidth || window.innerWidth;
     const startLeft = 20;
-    const tickCount = Math.max(Math.ceil(duration), 1); // 粗略按 1s 一个刻度
+    const tickCount = Math.max(Math.ceil(duration), 1); // 每秒一个刻度
     const target = (width - startLeft) / tickCount;
 
     setScaleWidth(Math.min(Math.max(target, 40), 400));
+
     const api = timelineRef.current;
-    api?.setScrollLeft(0);
+    api?.setScrollLeft(0); // 滚动回到起点
   };
 
   return (
     <div className="app-editor-layout__timeline">
+      {/* 播放控制区 */}
       <PlaybackControls
         isPlaying={isPlaying}
         currentTime={currentTime}
@@ -178,6 +259,7 @@ export function Timeline() {
       />
       <div className="app-editor-layout__timeline-content">
         {editorData.length === 0 ? (
+          // 如果当前没内容，提示添加媒体
           <div
             className="timeline-editor timeline-editor--empty"
             ref={timelineContainerRef}
@@ -187,11 +269,13 @@ export function Timeline() {
             </p>
           </div>
         ) : (
+          // 主时间轴区域
           <div className="timeline-editor" ref={timelineContainerRef}>
             <ReactTimeline
               ref={timelineRef}
-              // 第三方库目前未导出 TS 类型，这里先使用 any 以便后续迭代替换为真实数据结构
+              // @ts-ignore: 第三方库未导出 TS 类型。后续有风险请逐步替换。
               editorData={editorData as any}
+              // @ts-ignore
               effects={effects as any}
               scale={1}
               scaleSplitCount={10}
