@@ -14,29 +14,32 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 
-interface PlaybackControlsProps {
-  isPlaying: boolean;
-  currentTime: number;
-  duration: number;
-  onTogglePlay: () => void;
-  onStepBackward: () => void;
-  onStepForward: () => void;
-  onZoomOut: () => void;
-  onZoomIn: () => void;
-  onFitToView: () => void;
-}
+// 播放控制条Props定义：控制播放状态、跳转、缩放、适应视图区等交互
+type PlaybackControlsProps = {
+  isPlaying: boolean; // 是否正在播放
+  currentTime: number; // 当前播放时间(s)
+  duration: number; // 媒体总时长(s)
+  onTogglePlay: () => void; // 播放/暂停切换回调
+  onStepBackward: () => void; // 跳转到起始/上一段回调
+  onStepForward: () => void; // 跳转到末尾/下一段回调
+  onZoomOut: () => void; // 时间轴缩小回调
+  onZoomIn: () => void; // 时间轴放大回调
+  onFitToView: () => void; // 一键适应视图区回调
+};
 
-function formatTime(time: number): string {
+// 时间格式化工具: 转换秒为 mm:ss.ms 字符串
+const formatTime = (time: number): string => {
   const clamped = Math.max(0, time);
   const minutes = Math.floor(clamped / 60);
   const seconds = Math.floor(clamped % 60);
-  const ms = Math.floor((clamped * 100) % 100);
+  const ms = Math.floor((clamped * 100) % 100); // 两位毫秒
   return `${minutes}:${seconds.toString().padStart(2, "0")}.${ms
     .toString()
     .padStart(2, "0")}`;
-}
+};
 
-export function PlaybackControls({
+// 播放控制条主组件
+export const PlaybackControls = ({
   isPlaying,
   currentTime,
   duration,
@@ -46,9 +49,10 @@ export function PlaybackControls({
   onZoomOut,
   onZoomIn,
   onFitToView,
-}: PlaybackControlsProps) {
+}: PlaybackControlsProps) => {
   return (
     <div className="playback-controls">
+      {/* 左侧剪切/复制/删除工具区（当前禁用） */}
       <div className="playback-controls__left">
         <button className="playback-controls__btn" disabled title="Cut">
           <Scissors size={16} />
@@ -60,7 +64,9 @@ export function PlaybackControls({
           <Trash2 size={16} />
         </button>
       </div>
+      {/* 中间播放主控区域 */}
       <div className="playback-controls__center">
+        {/* 跳到起点 */}
         <button
           className="playback-controls__btn"
           title="Go to Start"
@@ -68,6 +74,7 @@ export function PlaybackControls({
         >
           <SkipBack size={16} />
         </button>
+        {/* 播放/暂停切换按钮 */}
         <button
           className="playback-controls__btn playback-controls__play-btn"
           title={isPlaying ? "Pause" : "Play"}
@@ -79,6 +86,7 @@ export function PlaybackControls({
             <Play size={16} fill="currentColor" />
           )}
         </button>
+        {/* 跳到结尾 */}
         <button
           className="playback-controls__btn"
           title="Go to End"
@@ -86,15 +94,17 @@ export function PlaybackControls({
         >
           <SkipForward size={16} />
         </button>
+        {/* 当前时间显示 */}
         <span className="playback-controls__time">
           {formatTime(currentTime)}
         </span>
         <span className="playback-controls__separator">/</span>
-        <span className="playback-controls__time">
-          {formatTime(duration)}
-        </span>
+        {/* 媒体总时长显示 */}
+        <span className="playback-controls__time">{formatTime(duration)}</span>
       </div>
+      {/* 右侧轨道设置与缩放控制 */}
       <div className="playback-controls__right">
+        {/* 轨道设置按钮（暂未启用） */}
         <button
           className="playback-controls__btn"
           disabled
@@ -103,6 +113,7 @@ export function PlaybackControls({
           <SlidersHorizontal size={16} />
         </button>
         <span className="playback-controls__divider">|</span>
+        {/* 时间轴缩放按钮 */}
         <button
           className="playback-controls__btn"
           title="Zoom Out"
@@ -117,6 +128,7 @@ export function PlaybackControls({
         >
           <ZoomIn size={16} />
         </button>
+        {/* 适应视图 */}
         <button
           className="playback-controls__btn"
           title="Fit to View"
@@ -125,10 +137,11 @@ export function PlaybackControls({
           <Maximize2 size={16} />
         </button>
         <span className="playback-controls__divider">|</span>
+        {/* 全屏按钮（暂未实现） */}
         <button className="playback-controls__btn" disabled title="Fullscreen">
           <Maximize size={16} />
         </button>
       </div>
     </div>
   );
-}
+};
