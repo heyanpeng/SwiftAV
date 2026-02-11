@@ -33,6 +33,10 @@ import { usePreviewTextSync } from "./usePreviewTextSync";
 import { usePreviewVideo } from "./usePreviewVideo";
 import "./Preview.css";
 
+/**
+ * 预览组件 Preview
+ * @returns 预览组件
+ */
 export function Preview() {
   // 画布容器 dom 节点引用，传给 CanvasEditor 做挂载
   const containerRef = useRef<HTMLDivElement | null>(null);
