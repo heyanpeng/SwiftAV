@@ -174,45 +174,6 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
       project = addClip(project, clip);
 
-      // 默认文本轨道：一条文本片段 "SwiftAV Canvas"，时长 5 秒
-      const textAssetId = createId("asset");
-      const textAsset: Asset = {
-        id: textAssetId,
-        name: "默认文本",
-        source: "",
-        kind: "text",
-        textMeta: { initialText: "SwiftAV Canvas" },
-      };
-      project = {
-        ...project,
-        assets: [...project.assets, textAsset],
-      };
-
-      const textTrackId = createId("track");
-      const textTrackBase: Omit<Track, "clips"> = {
-        id: textTrackId,
-        kind: "video",
-        name: "文本",
-        order: 1,
-        muted: false,
-        hidden: false,
-        locked: false,
-      };
-      project = addTrack(project, textTrackBase);
-
-      const textClipId = createId("clip");
-      const textClip: Clip = {
-        id: textClipId,
-        trackId: textTrackId,
-        assetId: textAssetId,
-        kind: "text",
-        start: 0,
-        end: 5,
-        transform: { x: 40, y: 40 },
-        params: { text: "SwiftAV Canvas", fontSize: 32, fill: "#ffffff" },
-      };
-      project = addClip(project, textClip);
-
       const duration = getProjectDuration(project);
 
       set({
