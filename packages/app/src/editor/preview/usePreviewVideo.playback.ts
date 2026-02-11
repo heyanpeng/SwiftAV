@@ -141,9 +141,9 @@ export function usePreviewVideoPlaybackLoop(
     const {
       sinksByAssetRef,
       clipCanvasesRef,
+      syncedVideoClipIdsRef,
       clipIteratorsRef,
       clipNextFrameRef,
-      syncedVideoClipIdsRef,
       isPlayingRef,
       playbackClockStartedRef,
       playbackTimeAtStartRef,
@@ -180,11 +180,17 @@ export function usePreviewVideoPlaybackLoop(
         const active = getActiveVideoClips(proj, playbackTime, dur);
         const activeIds = new Set(active.map((a) => a.clip.id));
 
-        // 清理：移除已不再可见的 clip 的 iterator/nextFrame，避免内存增长
+        // 清理：移除已不再可见的 clip 的 iterator/nextFrame，以及对应画布节点，避免遮挡下方轨道与内存增长
         for (const clipId of [...clipIteratorsRef.current.keys()]) {
           if (activeIds.has(clipId)) {
             continue;
           }
+          // 移除舞台上的视频节点与相关缓存
+          if (syncedVideoClipIdsRef.current.has(clipId)) {
+            editor.removeVideo(clipId);
+            syncedVideoClipIdsRef.current.delete(clipId);
+          }
+          clipCanvasesRef.current.delete(clipId);
           clipIteratorsRef.current.delete(clipId);
           clipNextFrameRef.current.delete(clipId);
         }
