@@ -12,7 +12,7 @@ import {
   Maximize2,
 } from "lucide-react";
 import "./CanvasPanel.css";
-import { useProjectStore } from "../../../../stores";
+import { useProjectStore } from "@/stores";
 
 type CanvasSize = {
   label: string;

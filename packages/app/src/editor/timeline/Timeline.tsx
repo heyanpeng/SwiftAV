@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { TimelineState } from "@swiftav/timeline";
 import { ReactTimeline } from "@swiftav/timeline";
 import { PlaybackControls } from "./PlaybackControls";
-import { useProjectStore } from "../../../stores";
+import { useProjectStore } from "@/stores";
 import "./Timeline.css";
 
 export function Timeline() {

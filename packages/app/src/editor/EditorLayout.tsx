@@ -1,7 +1,7 @@
-import { Header } from "./header/Header";
-import { OptionsPanel } from "./content/options/OptionsPanel";
-import { Player } from "./content/player/Player";
-import { Timeline } from "./timeline/Timeline";
+import { Header } from "@/editor/header/Header";
+import { OptionsPanel } from "@/editor/content/options/OptionsPanel";
+import { Player } from "@/editor/content/player/Player";
+import { Timeline } from "@/editor/timeline/Timeline";
 import "./EditorLayout.css";
 
 export function EditorLayout() {

@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { CanvasEditor } from "@swiftav/canvas";
 import { CanvasSink, type Input, type WrappedCanvas } from "mediabunny";
 import { createInputFromUrl } from "@swiftav/media";
-import { useProjectStore } from "../../../../stores";
+import { useProjectStore } from "@/stores";
 import "./Canvas.css";
 
 export function Canvas() {

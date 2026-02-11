@@ -57,6 +57,10 @@ export interface ProjectStoreActions {
    */
   setIsPlaying(isPlaying: boolean): void;
   /**
+   * 设置画布背景颜色（预览用）。
+   */
+  setCanvasBackgroundColor(color: string): void;
+  /**
    * 将当前工程导出为 mp4，并返回生成的视频 Blob。
    */
   exportToMp4(onProgress?: (progress: number) => void): Promise<Blob | null>;

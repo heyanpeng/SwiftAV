@@ -1,6 +1,6 @@
 import { Undo, Redo, Upload, Clapperboard, Github } from "lucide-react";
 import { useState } from "react";
-import { useProjectStore } from "../../../stores";
+import { useProjectStore } from "@/stores";
 import "./Header.css";
 
 export function Header() {

@@ -27,6 +27,7 @@
     /* Path mapping */
     "baseUrl": ".",
     "paths": {
+      "@/*": ["src/*"],
       "@swiftav/canvas": ["../@swiftav/canvas/src"]
     }
   },

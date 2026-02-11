@@ -1,6 +1,6 @@
 import { Cloud, Upload } from "lucide-react";
 import { useRef } from "react";
-import { useProjectStore } from "../../../../stores";
+import { useProjectStore } from "@/stores";
 import "./MediaPanel.css";
 
 export function MediaPanel() {

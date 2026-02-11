@@ -1,6 +1,13 @@
 import { create } from 'zustand';
 
 /**
+ * 示例代码（Example Store）
+ *
+ * 本文件为示例/参考代码，展示如何使用 zustand 创建状态管理 store。
+ * 实际业务请使用 projectStore 等，可保留本文件作参考或按需移除。
+ */
+
+/**
  * 示例 Store 状态接口
  */
 export interface ExampleState {
