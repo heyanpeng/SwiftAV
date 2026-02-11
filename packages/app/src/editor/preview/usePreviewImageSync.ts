@@ -88,8 +88,9 @@ export function usePreviewImageSync(
       height: number;
     }> = [];
 
-    // 遍历所有轨道，挑出未隐藏的图片类型clip且时间线在显示区间
-    for (const track of project.tracks) {
+    // 按轨道 order 升序遍历（order 大的后绘制，显示在上层）
+    const tracksByOrder = [...project.tracks].sort((a, b) => a.order - b.order);
+    for (const track of tracksByOrder) {
       if (track.hidden) {
         continue;
       }

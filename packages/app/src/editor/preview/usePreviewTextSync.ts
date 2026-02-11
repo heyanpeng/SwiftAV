@@ -40,8 +40,9 @@ export function usePreviewTextSync(
       fill: string;
     }> = [];
 
-    // 遍历工程所有轨道
-    for (const track of project.tracks) {
+    // 按轨道 order 升序遍历（order 大的后绘制，显示在上层）
+    const tracksByOrder = [...project.tracks].sort((a, b) => a.order - b.order);
+    for (const track of tracksByOrder) {
       // 跳过被隐藏的轨道
       if (track.hidden) {
         continue;

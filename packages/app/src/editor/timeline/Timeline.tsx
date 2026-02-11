@@ -11,12 +11,14 @@ export function Timeline() {
   const setCurrentTimeGlobal = useProjectStore((s) => s.setCurrentTime);
 
   // 将 Project 中的轨道/片段转换为 ReactTimeline 需要的 editorData 结构
+  // 轨道按 order 降序排列，order 越大越靠上
   const editorData = useMemo(() => {
     if (!project) {
       return [];
     }
 
-    return project.tracks.map((track) => ({
+    const sortedTracks = [...project.tracks].sort((a, b) => b.order - a.order);
+    return sortedTracks.map((track) => ({
       id: track.id,
       actions: track.clips.map((clip) => ({
         id: clip.id,
@@ -45,13 +47,14 @@ export function Timeline() {
   const timelineRef = useRef<TimelineState | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [scaleWidth, setScaleWidth] = useState(160); // 每个主刻度宽度（px）
+  const [scaleWidth, setScaleWidth] = useState(100); // 每个主刻度宽度（px）
   const timelineContainerRef = useRef<HTMLDivElement | null>(null);
 
   const duration = useMemo(() => {
     return editorData.reduce((max, row) => {
       const rowMax = row.actions.reduce(
-        (rowEnd: number, action: { end: number }) => Math.max(rowEnd, action.end),
+        (rowEnd: number, action: { end: number }) =>
+          Math.max(rowEnd, action.end),
         0,
       );
       return Math.max(max, rowMax);
@@ -167,7 +170,10 @@ export function Timeline() {
       />
       <div className="app-editor-layout__timeline-content">
         {editorData.length === 0 ? (
-          <div className="timeline-editor timeline-editor--empty" ref={timelineContainerRef}>
+          <div
+            className="timeline-editor timeline-editor--empty"
+            ref={timelineContainerRef}
+          >
             <p className="app-editor-layout__timeline-message">
               将媒体添加到时间轴以开始创建视频
             </p>
@@ -175,30 +181,30 @@ export function Timeline() {
         ) : (
           <div className="timeline-editor" ref={timelineContainerRef}>
             <ReactTimeline
-            ref={timelineRef}
-            // 第三方库目前未导出 TS 类型，这里先使用 any 以便后续迭代替换为真实数据结构
-            editorData={editorData as any}
-            effects={effects as any}
-            scale={1}
-            scaleWidth={scaleWidth}
-            startLeft={20}
-            minScaleCount={20}
-            maxScaleCount={200}
-            onCursorDrag={handleCursorDrag}
-            onCursorDragEnd={handleCursorDragEnd}
-            onClickTimeArea={(time: number) => {
-              const api = timelineRef.current;
-              if (api) {
-                api.pause();
-                api.setTime(time);
-              }
-              setIsPlaying(false);
-              setCurrentTime(time);
-              setCurrentTimeGlobal(time);
-              setIsPlayingGlobal(false);
-              return false;
-            }}
-          />
+              ref={timelineRef}
+              // 第三方库目前未导出 TS 类型，这里先使用 any 以便后续迭代替换为真实数据结构
+              editorData={editorData as any}
+              effects={effects as any}
+              scale={1}
+              scaleWidth={scaleWidth}
+              startLeft={20}
+              minScaleCount={20}
+              maxScaleCount={Math.max(200, Math.ceil(duration) + 20)}
+              onCursorDrag={handleCursorDrag}
+              onCursorDragEnd={handleCursorDragEnd}
+              onClickTimeArea={(time: number) => {
+                const api = timelineRef.current;
+                if (api) {
+                  api.pause();
+                  api.setTime(time);
+                }
+                setIsPlaying(false);
+                setCurrentTime(time);
+                setCurrentTimeGlobal(time);
+                setIsPlayingGlobal(false);
+                return false;
+              }}
+            />
           </div>
         )}
       </div>

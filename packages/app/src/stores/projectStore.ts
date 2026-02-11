@@ -85,101 +85,158 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
    canvasBackgroundColor: "#000000",
 
   async loadVideoFile(file: File) {
-    // 释放上一次的 blob URL
-    const prevUrl = get().videoUrl;
-    if (prevUrl) {
-      URL.revokeObjectURL(prevUrl);
-    }
-
     const blobUrl = URL.createObjectURL(file);
 
     set({ loading: true });
     try {
       const info = await probeMedia({ type: "blob", blob: file });
 
-      const projectId = createId("project");
-      const width = info.video?.displayWidth ?? 1920;
-      const height = info.video?.displayHeight ?? 1080;
+      const existing = get().project;
+      let project: Project;
 
-      let project: Project = createEmptyProject({
-        id: projectId,
-        name: file.name,
-        fps: 30,
-        width,
-        height,
-        exportSettings: {
-          format: "mp4",
-        },
-      });
+      if (existing) {
+        // 已有工程：新增资源 + 新视频轨道（在最上方）+ 新片段
+        const assetId = createId("asset");
+        const asset: Asset = {
+          id: assetId,
+          name: file.name,
+          source: blobUrl,
+          kind: "video",
+          duration: info.duration,
+          videoMeta: info.video
+            ? {
+                width: info.video.displayWidth,
+                height: info.video.displayHeight,
+                rotation: info.video.rotation,
+                fps: undefined,
+                codec: info.video.codec ?? undefined,
+              }
+            : undefined,
+          audioMeta: info.audio
+            ? {
+                sampleRate: info.audio.sampleRate,
+                channels: info.audio.numberOfChannels,
+                codec: info.audio.codec ?? undefined,
+              }
+            : undefined,
+        };
 
-      const assetId = createId("asset");
-      const asset: Asset = {
-        id: assetId,
-        name: file.name,
-        source: blobUrl,
-        kind: "video",
-        duration: info.duration,
-        videoMeta: info.video
-          ? {
-              width: info.video.displayWidth,
-              height: info.video.displayHeight,
-              rotation: info.video.rotation,
-              fps: undefined,
-              codec: info.video.codec ?? undefined,
-            }
-          : undefined,
-        audioMeta: info.audio
-          ? {
-              sampleRate: info.audio.sampleRate,
-              channels: info.audio.numberOfChannels,
-              codec: info.audio.codec ?? undefined,
-            }
-          : undefined,
-      };
+        project = {
+          ...existing,
+          assets: [...existing.assets, asset],
+        };
 
-      // 将资源加入工程
-      project = {
-        ...project,
-        assets: [asset],
-      };
+        const trackId = createId("track");
+        const topOrder =
+          Math.max(...project.tracks.map((t) => t.order), -1) + 1;
+        const trackBase: Omit<Track, "clips"> = {
+          id: trackId,
+          kind: "video",
+          name: file.name,
+          order: topOrder,
+          muted: false,
+          hidden: false,
+          locked: false,
+        };
 
-      const trackId = createId("track");
-      const trackBase: Omit<Track, "clips"> = {
-        id: trackId,
-        kind: "video",
-        name: "主视频",
-        order: 0,
-        muted: false,
-        hidden: false,
-        locked: false,
-      };
+        project = addTrack(project, trackBase);
 
-      project = addTrack(project, trackBase);
+        const clipId = createId("clip");
+        const clip: Clip = {
+          id: clipId,
+          trackId,
+          assetId,
+          kind: "video",
+          start: 0,
+          end: info.duration,
+          inPoint: 0,
+          outPoint: info.duration,
+          transform: { x: 0, y: 0 },
+        };
 
-      const clipId = createId("clip");
-      const clip: Clip = {
-        id: clipId,
-        trackId,
-        assetId,
-        kind: "video",
-        start: 0,
-        end: info.duration,
-        inPoint: 0,
-        outPoint: info.duration,
-        transform: {
-          x: 0,
-          y: 0,
-        },
-      };
+        project = addClip(project, clip);
+      } else {
+        // 无工程：创建新工程，并释放之前可能残留的 blob URL
+        const prevUrl = get().videoUrl;
+        if (prevUrl) {
+          URL.revokeObjectURL(prevUrl);
+        }
 
-      project = addClip(project, clip);
+        const projectId = createId("project");
+        const width = info.video?.displayWidth ?? 1920;
+        const height = info.video?.displayHeight ?? 1080;
+
+        project = createEmptyProject({
+          id: projectId,
+          name: file.name,
+          fps: 30,
+          width,
+          height,
+          exportSettings: { format: "mp4" },
+        });
+
+        const assetId = createId("asset");
+        const asset: Asset = {
+          id: assetId,
+          name: file.name,
+          source: blobUrl,
+          kind: "video",
+          duration: info.duration,
+          videoMeta: info.video
+            ? {
+                width: info.video.displayWidth,
+                height: info.video.displayHeight,
+                rotation: info.video.rotation,
+                fps: undefined,
+                codec: info.video.codec ?? undefined,
+              }
+            : undefined,
+          audioMeta: info.audio
+            ? {
+                sampleRate: info.audio.sampleRate,
+                channels: info.audio.numberOfChannels,
+                codec: info.audio.codec ?? undefined,
+              }
+            : undefined,
+        };
+
+        project = { ...project, assets: [asset] };
+
+        const trackId = createId("track");
+        const trackBase: Omit<Track, "clips"> = {
+          id: trackId,
+          kind: "video",
+          name: "主视频",
+          order: 0,
+          muted: false,
+          hidden: false,
+          locked: false,
+        };
+
+        project = addTrack(project, trackBase);
+
+        const clipId = createId("clip");
+        const clip: Clip = {
+          id: clipId,
+          trackId,
+          assetId,
+          kind: "video",
+          start: 0,
+          end: info.duration,
+          inPoint: 0,
+          outPoint: info.duration,
+          transform: { x: 0, y: 0 },
+        };
+
+        project = addClip(project, clip);
+      }
 
       const duration = getProjectDuration(project);
 
       set({
         project,
         duration,
-        currentTime: 0,
+        currentTime: get().currentTime,
         isPlaying: false,
         videoUrl: blobUrl,
       });
