@@ -50,6 +50,9 @@ importers:
 
   packages/@swiftav/canvas:
     dependencies:
+      '@swiftav/utils':
+        specifier: workspace:*
+        version: link:../utils
       konva:
         specifier: ^9.3.16
         version: 9.3.22
@@ -232,6 +235,9 @@ importers:
       '@swiftav/timeline':
         specifier: workspace:*
         version: link:../@swiftav/timeline
+      '@swiftav/utils':
+        specifier: workspace:*
+        version: link:../@swiftav/utils
       lucide-react:
         specifier: ^0.563.0
         version: 0.563.0(react@19.2.3)

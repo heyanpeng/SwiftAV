@@ -2,6 +2,7 @@ packages:
   - 'packages/*'
   - 'packages/@swiftav/timeline'
   - 'packages/@swiftav/canvas'
+  - 'packages/@swiftav/utils'
   - 'packages/@swiftav/media'
   - 'packages/@swiftav/project'
   - 'packages/@swiftav/audio'
