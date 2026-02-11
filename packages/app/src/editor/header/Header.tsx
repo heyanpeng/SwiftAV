@@ -9,6 +9,13 @@ export function Header() {
   const exportToMp4 = useProjectStore((s) => s.exportToMp4);
   const [exporting, setExporting] = useState(false);
 
+  // 当前日期显示，格式类似 "11 Feb 2026"
+  const todayLabel = new Date().toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+
   const handleExport = async () => {
     if (!project || exporting) return;
     setExporting(true);
@@ -39,7 +46,7 @@ export function Header() {
         <input
           type="text"
           className="app-editor-layout__project-name"
-          defaultValue="23 Jan 2026"
+          defaultValue={todayLabel}
         />
       </div>
       <div className="app-editor-layout__header-right">

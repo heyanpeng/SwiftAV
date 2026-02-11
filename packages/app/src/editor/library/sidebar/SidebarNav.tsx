@@ -12,16 +12,18 @@ import {
   AudioLines,
 } from "lucide-react";
 
-interface NavItem {
-  id: string;
-  label: string;
+// 侧边栏每个导航项的数据结构
+type NavItem = {
+  id: string; // 唯一标识
+  label: string; // 显示标签
   icon: React.ComponentType<{
     size?: number;
     className?: string;
     fill?: string;
-  }>;
-}
+  }>; // 图标组件
+};
 
+// 侧边栏导航列表
 const navItems: NavItem[] = [
   { id: "media", label: "媒体", icon: CloudUpload },
   { id: "canvas", label: "画布", icon: LayoutGrid },
@@ -34,20 +36,28 @@ const navItems: NavItem[] = [
   { id: "tts", label: "TTS", icon: AudioLines },
 ];
 
-interface SidebarNavProps {
-  activeTab?: string;
-  onTabChange?: (tabId: string) => void;
-}
+// 侧边栏导航组件 Props
+type SidebarNavProps = {
+  activeTab?: string; // 当前激活的 tab id
+  onTabChange?: (tabId: string) => void; // 改变 tab 时的回调
+};
 
-export function SidebarNav({
+/**
+ * 侧边栏导航组件
+ * @param activeTab 当前激活的 tab（可选，默认 media）
+ * @param onTabChange 切换 tab 时触发的回调（可选）
+ */
+export const SidebarNav = ({
   activeTab = "media",
   onTabChange,
-}: SidebarNavProps) {
+}: SidebarNavProps) => {
   return (
     <nav className="sidebar-nav">
+      {/* 顶部新增按钮（目前仅为图标展示） */}
       <button className="nav-add-btn" title="Add">
         <Plus size={16} />
       </button>
+      {/* 所有导航项 */}
       <div className="nav-items">
         {navItems.map((item) => {
           const IconComponent = item.icon;
@@ -55,16 +65,20 @@ export function SidebarNav({
             <button
               key={item.id}
               className={`nav-item ${activeTab === item.id ? "active" : ""}`}
-              onClick={() => onTabChange?.(item.id)}
+              onClick={() => {
+                // 仅当 onTabChange 存在时调用
+                if (onTabChange) {
+                  onTabChange(item.id);
+                }
+              }}
               title={item.label}
             >
+              {/* 图标 */}
               <span className="nav-icon">
-                {item.id === "record" ? (
-                  <IconComponent size={18} />
-                ) : (
-                  <IconComponent size={18} />
-                )}
+                {/* 可在此特殊处理某些图标样式 */}
+                <IconComponent size={18} />
               </span>
+              {/* 标签文本 */}
               <span className="nav-label">{item.label}</span>
             </button>
           );
@@ -72,4 +86,4 @@ export function SidebarNav({
       </div>
     </nav>
   );
-}
+};
