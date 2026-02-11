@@ -1,5 +1,5 @@
 import { Header } from "@/editor/header/Header";
-import { OptionsPanel } from "@/editor/options/OptionsPanel";
+import { Library } from "@/editor/library/Library";
 import { Player } from "@/editor/player/Player";
 import { Timeline } from "@/editor/timeline/Timeline";
 import "./EditorLayout.css";
@@ -9,7 +9,7 @@ export function EditorLayout() {
     <div className="app-editor-layout">
       <Header />
       <div className="app-editor-layout__content">
-        <OptionsPanel />
+        <Library />
         <Player />
       </div>
       <Timeline />

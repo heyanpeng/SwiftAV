@@ -1,15 +1,15 @@
-.app-editor-layout__options-panel {
+.app-editor-layout__library {
   display: flex;
   height: 100%;
 }
 
-.panels-container {
+.library-panels {
   position: relative;
   width: 370px;
   height: 100%;
 }
 
-.panels-container > div {
+.library-panels > div {
   position: absolute;
   top: 0;
   left: 0;

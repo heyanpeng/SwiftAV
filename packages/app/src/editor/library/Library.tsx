@@ -1,24 +1,22 @@
 import { useState, useEffect } from "react";
-import { SidebarNav } from "@/editor/sidebar/SidebarNav";
-import { MediaPanel } from "@/editor/panels/MediaPanel";
-import { CanvasPanel } from "@/editor/panels/CanvasPanel";
-import { TextPanel } from "@/editor/panels/TextPanel";
-import { AudioPanel } from "@/editor/panels/AudioPanel";
-import { VideoPanel } from "@/editor/panels/VideoPanel";
-import { ImagePanel } from "@/editor/panels/ImagePanel";
-import { ElementsPanel } from "@/editor/panels/ElementsPanel";
-import { RecordPanel } from "@/editor/panels/RecordPanel";
-import { TTSPanel } from "@/editor/panels/TTSPanel";
-import "./OptionsPanel.css";
+import { SidebarNav } from "@/editor/library/sidebar/SidebarNav";
+import { MediaPanel } from "@/editor/library/panels/MediaPanel";
+import { CanvasPanel } from "@/editor/library/panels/CanvasPanel";
+import { TextPanel } from "@/editor/library/panels/TextPanel";
+import { AudioPanel } from "@/editor/library/panels/AudioPanel";
+import { VideoPanel } from "@/editor/library/panels/VideoPanel";
+import { ImagePanel } from "@/editor/library/panels/ImagePanel";
+import { ElementsPanel } from "@/editor/library/panels/ElementsPanel";
+import { RecordPanel } from "@/editor/library/panels/RecordPanel";
+import { TTSPanel } from "@/editor/library/panels/TTSPanel";
+import "./Library.css";
 
-export function OptionsPanel() {
+export function Library() {
   const [activeTab, setActiveTab] = useState(() => {
-    // 从 localStorage 读取保存的选中菜单，如果没有则使用默认值"media"
     const savedTab = localStorage.getItem("sidebar-active-tab");
     return savedTab || "media";
   });
   const [renderedPanels, setRenderedPanels] = useState<Set<string>>(() => {
-    // 从 localStorage 读取已渲染的面板列表
     const savedPanels = localStorage.getItem("sidebar-rendered-panels");
     const savedTab = localStorage.getItem("sidebar-active-tab") || "media";
 
@@ -26,7 +24,6 @@ export function OptionsPanel() {
       try {
         const panelsArray = JSON.parse(savedPanels) as string[];
         const panelsSet = new Set<string>(panelsArray);
-        // 确保当前选中的标签也在已渲染列表中
         panelsSet.add(savedTab);
         return panelsSet;
       } catch {
@@ -36,12 +33,10 @@ export function OptionsPanel() {
     return new Set<string>(["media", savedTab]);
   });
 
-  // 保存选中的菜单到 localStorage
   useEffect(() => {
     localStorage.setItem("sidebar-active-tab", activeTab);
   }, [activeTab]);
 
-  // 保存已渲染的面板列表到 localStorage
   useEffect(() => {
     localStorage.setItem(
       "sidebar-rendered-panels",
@@ -55,9 +50,9 @@ export function OptionsPanel() {
   };
 
   return (
-    <div className="app-editor-layout__options-panel">
+    <div className="app-editor-layout__library">
       <SidebarNav activeTab={activeTab} onTabChange={handleTabChange} />
-      <div className="panels-container">
+      <div className="library-panels">
         {renderedPanels.has("media") && (
           <div style={{ display: activeTab === "media" ? "block" : "none" }}>
             <MediaPanel />
