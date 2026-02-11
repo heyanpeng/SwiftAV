@@ -1,3 +1,9 @@
+/**
+ * 预览组件：按当前时间与播放状态渲染工程画布（多轨视频 + 文本）。
+ * - 视频：每个视频 asset 一个 CanvasSink；按 currentTime 算 active 片段，每个片段一个 canvas 用 addVideo 挂到画布。
+ * - 播放时用 iterator 预取下一帧，在 rAF 内按 playbackTime 消费并拉下一帧，保证流畅；暂停/seek 时用 getCanvas 拉单帧。
+ * - 文本：与视频一致，仅当 start <= currentTime < end 时在画布上 add/update，否则 remove。
+ */
 import { useEffect, useRef, useState } from "react";
 import { CanvasEditor } from "@swiftav/canvas";
 import { CanvasSink, type Input, type WrappedCanvas } from "mediabunny";
@@ -8,7 +14,13 @@ import "./Preview.css";
 
 type Track = Project["tracks"][number];
 
-/** 当前时间下可见的视频片段（含 clip、track、asset），按轨道顺序 */
+/**
+ * 获取当前时间下可见的视频片段。
+ * 仅包含 kind 为 video、时间区间 [start, end) 包含 t、且轨道未隐藏的 clip，按轨道顺序返回。
+ * @param project 当前工程
+ * @param t 当前时间（秒）
+ * @returns 可见片段的 clip、track、asset（id + source）列表
+ */
 function getActiveVideoClips(
   project: Project,
   t: number,
@@ -30,6 +42,9 @@ function getActiveVideoClips(
   return out;
 }
 
+/**
+ * 预览组件：根据 project、currentTime、isPlaying 渲染画布（多轨视频 + 文本），并驱动播放时的 rAF 与帧消费。
+ */
 export function Preview() {
   const project = useProjectStore((s) => s.project);
   const currentTime = useProjectStore((s) => s.currentTime);
@@ -57,36 +72,43 @@ export function Preview() {
   /** 播放时每个 clip 的下一帧缓存，rAF 内按时间消费 */
   const clipNextFrameRef = useRef<Map<string, WrappedCanvas | null>>(new Map());
 
+  /** rAF 内需读 project，避免闭包陈旧 */
   const projectRef = useRef<Project | null>(null);
   const isPlayingRef = useRef(false);
-  const playbackTimeAtStartRef = useRef(0);
-  const wallStartRef = useRef(0);
+  const playbackTimeAtStartRef = useRef(0); // 本次播放起点对应的工程时间（秒）
+  const wallStartRef = useRef(0); // 本次播放起点的墙上时间（秒），用于 getPlaybackTime
   const durationRef = useRef(0);
   const rafIdRef = useRef<number | null>(null);
   const syncedTextClipIdsRef = useRef<Set<string>>(new Set());
-  /** project 下视频 sink 创建完成后自增，用于让“同步视频片段”effect 再跑一次以拉首帧 */
+  /** 视频 sink 建完后自增，触发“同步视频片段”effect 再跑一次以拉首帧 */
   const [sinksReadyTick, setSinksReadyTick] = useState(0);
 
-  // 把 store 的 isPlaying / duration / currentTime 同步到 ref，供 rAF 与异步回调使用
+  /** 将 store 的 isPlaying 同步到 ref，供 rAF 与异步回调使用 */
   useEffect(() => {
     isPlayingRef.current = isPlaying;
   }, [isPlaying]);
 
+  /** 将 store 的 duration 同步到 ref，供 rAF 内片尾判断使用 */
   useEffect(() => {
     durationRef.current = duration;
   }, [duration]);
 
+  /** 将 project 同步到 ref，供 rAF 内 getActiveVideoClips 使用 */
   useEffect(() => {
     projectRef.current = project;
   }, [project]);
 
+  /** 暂停时把 currentTime 同步到 playbackTimeAtStartRef，保证下次播放起点正确 */
   useEffect(() => {
     if (!isPlaying) {
       playbackTimeAtStartRef.current = currentTime;
     }
   }, [isPlaying, currentTime]);
 
-  // 初始化：创建 CanvasEditor（16:9 内嵌）、窗口 resize 时重算尺寸（文本由“文本轨道片段”在下方 effect 中同步）
+  /**
+   * 初始化画布：创建 CanvasEditor（16:9 内嵌）、监听 resize 重算尺寸；卸载时销毁 stage 并取消 rAF。
+   * 文本与视频由下方 effect 按 currentTime 同步。
+   */
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -115,6 +137,7 @@ export function Preview() {
 
     editorRef.current = editor;
 
+    /** 窗口 resize 时按 16:9 重算画布尺寸并调用 editor.resize */
     const handleResize = () => {
       if (!containerRef.current || !editorRef.current) return;
       const r = containerRef.current.getBoundingClientRect();
@@ -138,6 +161,7 @@ export function Preview() {
 
     window.addEventListener("resize", handleResize);
 
+    /** 卸载时移除 resize 监听、销毁 stage、取消 rAF */
     return () => {
       window.removeEventListener("resize", handleResize);
       editor.getStage().destroy();
@@ -149,14 +173,17 @@ export function Preview() {
     };
   }, []);
 
-  // 画布背景色变化时同步到 CanvasEditor
+  /** 画布背景色变化时同步到 CanvasEditor 的 setBackgroundColor */
   useEffect(() => {
     const editor = editorRef.current;
     if (!editor) return;
     editor.setBackgroundColor(canvasBackgroundColor);
   }, [canvasBackgroundColor]);
 
-  // 按 currentTime 同步“当前可见”的文本轨道片段到画布：在时间范围内的文本 clip 才显示
+  /**
+   * 按 currentTime 同步“当前可见”的文本轨道片段到画布。
+   * 仅 start <= t < end 的文本 clip 显示；与 syncedTextClipIdsRef diff 后 add/update/removeText。
+   */
   useEffect(() => {
     const editor = editorRef.current;
     if (!editor) return;
@@ -229,7 +256,10 @@ export function Preview() {
     }
   }, [project, currentTime]);
 
-  // project 变化时：为每个视频 asset 创建 Input + CanvasSink；清理旧 sink 与画布上的视频元素
+  /**
+   * project 变化时：为每个视频 asset 创建 Input + CanvasSink 并存入 sinksByAssetRef；
+   * 无 project 或卸载时移除画布上所有视频元素并清空 sink/canvas 缓存。sink 建完后 setSinksReadyTick 触发下方 effect 拉首帧。
+   */
   useEffect(() => {
     const editor = editorRef.current;
     if (!editor) return;
@@ -252,8 +282,8 @@ export function Preview() {
 
     let cancelled = false;
 
+    /** 先移除画布上所有视频元素并清空 clip 画布与 sink，再为每个视频 asset 创建 Input + CanvasSink；完成后 setSinksReadyTick 触发拉首帧 */
     const setup = async () => {
-      // 先移除画布上所有已同步的视频元素并清空 clip 画布
       for (const id of syncedVideoClipIdsRef.current) {
         editor.removeVideo(id);
       }
@@ -279,12 +309,13 @@ export function Preview() {
         }
       }
       if (!cancelled) {
-        setSinksReadyTick((c) => c + 1);
+        setSinksReadyTick((c) => c + 1); // 触发下方“同步视频片段”effect 再跑一次拉首帧
       }
     };
 
     void setup();
 
+    /** 卸载或 project 再变时：取消进行中的 setup，移除画布上所有视频元素并清空 sink/canvas 缓存 */
     return () => {
       cancelled = true;
       const ed = editorRef.current;
@@ -299,7 +330,10 @@ export function Preview() {
     };
   }, [project]);
 
-  // 按 currentTime 同步“当前可见”的视频片段：add/remove 视频元素，对每个 active clip 拉一帧画到其 canvas
+  /**
+   * 按 currentTime 同步“当前可见”的视频片段：与 syncedVideoClipIdsRef diff 后 addVideo/removeVideo，
+   * 保证每个 active clip 有对应 canvas。播放时由 rAF+iterator 绘帧，此处仅在暂停/seek 时用 getCanvas 拉单帧。
+   */
   useEffect(() => {
     const editor = editorRef.current;
     if (!editor || !project) return;
@@ -313,6 +347,7 @@ export function Preview() {
     videoFrameRequestTimeRef.current = t;
     const requestTime = t;
 
+    // 不在当前时间范围内的片段从画布移除，并清理其 canvas / iterator / nextFrame
     const visibleIds = new Set(active.map((a) => a.clip.id));
     for (const id of syncedVideoClipIdsRef.current) {
       if (!visibleIds.has(id)) {
@@ -357,6 +392,7 @@ export function Preview() {
       // 播放时由 rAF + iterator 驱动绘帧，此处只做 seek/暂停时的单帧拉取
       if (isPlayingRef.current) continue;
 
+      // seek/暂停时拉单帧；返回后若 requestTime 已变则丢弃，避免乱序
       sinkEntry.sink
         .getCanvas(sourceTime)
         .then((wrapped) => {
@@ -373,7 +409,10 @@ export function Preview() {
     }
   }, [project, currentTime, sinksReadyTick]);
 
-  // 播放开始时：为每个当前可见的视频 clip 从 sourceTime 起建 iterator，预取两帧（画第一帧，第二帧进 clipNextFrameRef）
+  /**
+   * 播放开始时：为每个当前可见的视频 clip 从 sourceTime 起创建 sink.canvases 迭代器，
+   * 预取两帧（第一帧立即画到 canvas，第二帧放入 clipNextFrameRef 供 rAF 消费）。
+   */
   useEffect(() => {
     if (!isPlaying) return;
 
@@ -412,10 +451,14 @@ export function Preview() {
     }
   }, [isPlaying]);
 
-  // 播放时：rAF 内按 playbackTime 消费各 clip 的 nextFrame 并拉下一帧，推进 currentTime，到片尾停播
+  /**
+   * 播放时启动 rAF：每帧用 getPlaybackTime 得到当前播放时间，对每个 active clip 若 nextFrame 时间已到则画到 canvas 并 updateNextFrame，
+   * 然后 setCurrentTimeGlobal(playbackTime)；到片尾则停播并停在末尾。
+   */
   useEffect(() => {
     if (!isPlaying) return;
 
+    /** 根据墙上时间与播放起点推算当前播放时间（秒） */
     const getPlaybackTime = (): number => {
       return (
         performance.now() / 1000 -
@@ -424,6 +467,7 @@ export function Preview() {
       );
     };
 
+    /** 从该 clip 的迭代器拉下一帧并写入 clipNextFrameRef，供下一帧 rAF 消费 */
     const updateNextFrame = (clipId: string) => {
       const it = clipIteratorsRef.current.get(clipId);
       if (!it) return;
@@ -433,6 +477,7 @@ export function Preview() {
       });
     };
 
+    /** 每帧：按 playbackTime 取 active 视频片段，消费 nextFrame 并拉下一帧，同步 currentTime，到片尾停播 */
     const render = () => {
       const dur = durationRef.current;
       const playbackTime = getPlaybackTime();
@@ -461,6 +506,7 @@ export function Preview() {
         }
       }
 
+      // 到片尾停播并停在末尾，否则每帧同步 currentTime 供 Timeline 等使用
       if (playbackTime >= dur && dur > 0) {
         setIsPlayingGlobal(false);
         setCurrentTimeGlobal(dur);
@@ -474,6 +520,7 @@ export function Preview() {
 
     rafIdRef.current = requestAnimationFrame(render);
 
+    /** 暂停或卸载时取消 rAF */
     return () => {
       if (rafIdRef.current !== null) {
         cancelAnimationFrame(rafIdRef.current);
