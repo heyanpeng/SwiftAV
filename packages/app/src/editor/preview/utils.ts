@@ -11,21 +11,31 @@ export type ActiveVideoClip = {
 /**
  * 获取当前时间下可见的视频片段。
  * 仅包含 kind 为 video、时间区间 [start, end) 包含 t、且轨道未隐藏的 clip。
- * 按轨道 order 升序返回（order 大的后绘制，在画布上显示在上层）。
+ * 当 t 等于 timelineDuration（Go to End）时，也包含 end === duration 的 clip，用于显示最后一帧。
  * @param project 当前工程
  * @param t 当前时间（秒）
+ * @param timelineDuration 时间轴总时长（可选），用于在 t === duration 时仍显示结束于末尾的 clip
  * @returns 可见片段的 clip、track、asset（id + source）列表
  */
 export function getActiveVideoClips(
   project: Project,
   t: number,
+  timelineDuration?: number,
 ): ActiveVideoClip[] {
   const out: ActiveVideoClip[] = [];
   const tracksByOrder = [...project.tracks].sort((a, b) => a.order - b.order);
+  const atEnd =
+    timelineDuration != null &&
+    timelineDuration > 0 &&
+    t >= timelineDuration;
   for (const track of tracksByOrder) {
     if (track.hidden) continue;
     for (const clip of track.clips) {
-      if (clip.kind !== "video" || clip.start > t || clip.end <= t) continue;
+      if (clip.kind !== "video") continue;
+      const inRange = clip.start <= t && clip.end > t;
+      const endFrame =
+        atEnd && clip.start < clip.end && clip.end >= timelineDuration!;
+      if (!inRange && !endFrame) continue;
       const asset = project.assets.find((a) => a.id === clip.assetId);
       if (!asset || asset.kind !== "video" || !asset.source) continue;
       out.push({ clip, track, asset: { id: asset.id, source: asset.source } });

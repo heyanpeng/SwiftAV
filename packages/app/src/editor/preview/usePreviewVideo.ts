@@ -176,8 +176,7 @@ export function usePreviewVideo(
     }
 
     const t = currentTime;
-    // 获取当前时刻所有活跃的视频片段
-    const active = getActiveVideoClips(project, t);
+    const active = getActiveVideoClips(project, t, duration);
     // 舞台尺寸
     const stageSize = editor.getStage().size();
     const stageW = Math.max(1, Math.round(stageSize.width));
@@ -205,7 +204,8 @@ export function usePreviewVideo(
       }
 
       const inPoint = clip.inPoint ?? 0;
-      const sourceTime = inPoint + (t - clip.start);
+      const sourceTime =
+        inPoint + (Math.min(t, clip.end) - clip.start);
       // 片段在舞台上的参数
       const x = clip.transform?.x ?? 0;
       const y = clip.transform?.y ?? 0;
@@ -278,14 +278,15 @@ export function usePreviewVideo(
     clipNextFrameRef.current.clear();
     playbackClockStartedRef.current = false;
 
-    const active = getActiveVideoClips(proj, t0);
+    const active = getActiveVideoClips(proj, t0, duration);
     for (const { clip, asset } of active) {
       const sinkEntry = sinksByAssetRef.current.get(asset.id);
       if (!sinkEntry) {
         continue;
       }
       const inPoint = clip.inPoint ?? 0;
-      const sourceTime = inPoint + (t0 - clip.start);
+      const sourceTime =
+        inPoint + (Math.min(t0, clip.end) - clip.start);
       void (async () => {
         const it = sinkEntry.sink.canvases(sourceTime);
         clipIteratorsRef.current.set(clip.id, it);
@@ -369,10 +370,10 @@ export function usePreviewVideo(
       const editor = editorRef.current;
 
       if (proj && editor) {
-        const active = getActiveVideoClips(proj, playbackTime);
+        const active = getActiveVideoClips(proj, playbackTime, dur);
         for (const { clip } of active) {
           const inPoint = clip.inPoint ?? 0;
-          const sourceTime = inPoint + (playbackTime - clip.start);
+          const sourceTime = inPoint + (Math.min(playbackTime, clip.end) - clip.start);
           const nextFrame = clipNextFrameRef.current.get(clip.id);
           // 预拉帧的时间戳 <= 当前要显示的 sourceTime 时消耗该帧
           if (nextFrame && nextFrame.timestamp <= sourceTime) {
