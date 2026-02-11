@@ -275,27 +275,41 @@ export function Timeline() {
               ref={timelineRef}
               // @ts-ignore: 第三方库未导出 TS 类型。后续有风险请逐步替换。
               editorData={editorData as any}
-              // @ts-ignore
+              // 轨道关联资源字典，key为素材assetId，value为{id, name}
               effects={effects as any}
+              // 主刻度（每段的 "时间长度"，单位：秒），此处为1表示每格1秒
               scale={1}
+              // 每主刻度的细分数，将1秒细分为10份用于显示子网格线
               scaleSplitCount={10}
+              // 每一主刻度（1秒）横向显示宽度（像素），由 state 维护支持缩放
               scaleWidth={scaleWidth}
+              // 时间轴内容距离左侧起始空白距离（像素）
               startLeft={20}
+              // 最小主刻度数，保证界面紧凑，数值越大越容易滚动缩放
               minScaleCount={20}
+              // 最大主刻度数，避免渲染超长时崩溃，绑定duration动态设置
               maxScaleCount={Math.max(200, Math.ceil(duration) + 20)}
+              // 刻度标签自定义渲染函数，这里显示为“分:秒”格式
               getScaleRender={(scale) => <ScaleLabel scale={scale} />}
+              // 拖动光标事件，处理当前时间更新
               onCursorDrag={handleCursorDrag}
+              // 光标拖动结束事件（常用于同步全局状态）
               onCursorDragEnd={handleCursorDragEnd}
+              // 区域点击回调，跳到指定时间并暂停播放，需多处更新本地及全局播放状态
               onClickTimeArea={(time: number) => {
                 const api = timelineRef.current;
+                // 暂停播放并跳转到点击时间点
                 if (api) {
                   api.pause();
                   api.setTime(time);
                 }
+                // 更新本地播放状态和当前时间
                 setIsPlaying(false);
                 setCurrentTime(time);
+                // 同步全局状态
                 setCurrentTimeGlobal(time);
                 setIsPlayingGlobal(false);
+                // 返回 false 禁止事件冒泡
                 return false;
               }}
             />
