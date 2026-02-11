@@ -1,3 +1,4 @@
+/// <reference path="./snowflake-id.d.ts" />
 import Snowflake from "snowflake-id";
 
 const generator = new Snowflake({

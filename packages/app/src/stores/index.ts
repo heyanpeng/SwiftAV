@@ -9,4 +9,4 @@ export { useExampleStore } from "./exampleStore";
 export type { ExampleStore, ExampleState, ExampleActions } from "./exampleStore";
 
 export { useProjectStore } from "./projectStore";
-export type { ProjectStore, ProjectStoreState, ProjectStoreActions } from "./projectStore";
+export type { ProjectStore, ProjectStoreState, ProjectStoreActions } from "./projectStore.types";

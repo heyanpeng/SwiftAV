@@ -12,62 +12,7 @@ import {
 import { probeMedia } from "@swiftav/media";
 import { renderVideoWithCanvasLoop } from "@swiftav/renderer";
 import { createId } from "@swiftav/utils";
-
-/**
- * 工程相关的全局状态。
- */
-export interface ProjectStoreState {
-  project: Project | null;
-  /**
-   * 当前预览时间（秒）
-   */
-  currentTime: number;
-  /**
-   * 当前工程总时长（秒）
-   */
-  duration: number;
-  /**
-   * 是否正在播放（暂时仅用于 UI 显示）
-   */
-  isPlaying: boolean;
-  /**
-   * 是否正在执行导入/导出等耗时操作。
-   */
-  loading: boolean;
-  /**
-   * 当前主视频资源的 URL（通常由 File 生成的 blob URL）。
-   */
-  videoUrl: string | null;
-  /**
-   * 画布背景颜色（预览用）
-   */
-  canvasBackgroundColor: string;
-}
-
-export interface ProjectStoreActions {
-  /**
-   * 从本地视频文件创建新的工程。
-   */
-  loadVideoFile(file: File): Promise<void>;
-  /**
-   * 更新当前预览时间。
-   */
-  setCurrentTime(time: number): void;
-  /**
-   * 更新播放状态。
-   */
-  setIsPlaying(isPlaying: boolean): void;
-  /**
-   * 设置画布背景颜色（预览用）。
-   */
-  setCanvasBackgroundColor(color: string): void;
-  /**
-   * 将当前工程导出为 mp4，并返回生成的视频 Blob。
-   */
-  exportToMp4(onProgress?: (progress: number) => void): Promise<Blob | null>;
-}
-
-export type ProjectStore = ProjectStoreState & ProjectStoreActions;
+import type { ProjectStore } from "./projectStore.types";
 
 export const useProjectStore = create<ProjectStore>((set, get) => ({
   project: null,
@@ -76,7 +21,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   isPlaying: false,
   loading: false,
   videoUrl: null,
-   canvasBackgroundColor: "#000000",
+  canvasBackgroundColor: "#000000",
 
   async loadVideoFile(file: File) {
     const blobUrl = URL.createObjectURL(file);
