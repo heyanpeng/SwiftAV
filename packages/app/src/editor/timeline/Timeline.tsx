@@ -49,8 +49,6 @@ function ScaleLabel({ scale }: { scale: number }) {
  * 显示项目的多轨时间轴、播放控制、缩放与同步功能
  */
 export function Timeline() {
-  // 目标单个缩略图在时间轴上的“理想宽度”（像素）
-  const TARGET_THUMB_WIDTH_PX = 80;
   // 取出 project、以及全局播放控制和时间设置函数
   const project = useProjectStore((s) => s.project);
   const setIsPlayingGlobal = useProjectStore((s) => s.setIsPlaying);
@@ -216,41 +214,44 @@ export function Timeline() {
             fit: "cover",
           });
 
-          const urls: string[] = [];
+          // 预先占位，长度等于 THUMB_COUNT，后续逐帧填充并即时写回 store，
+          // 这样缩略图会“边生成边显示”，而不是等全部完成后才出现。
+          const urls: string[] = Array(THUMB_COUNT).fill("");
 
-          // 按时间戳依次采样缩略图。
-          // 这里不使用 canvasesAtTimestamps 流式接口，而是逐个调用 getCanvas，
-          // 以规避部分长视频在解码流上触发的 VideoDecoder DataError。
-          let producedCount = 0;
-          for (const ts of timestamps) {
+          for (let index = 0; index < THUMB_COUNT; index++) {
+            const ts = timestamps[index]!;
             try {
               const wrapped = await sink.getCanvas(ts);
               if (wrapped) {
                 const canvas = wrapped.canvas as HTMLCanvasElement;
-                urls.push(canvas.toDataURL("image/jpeg", 0.82));
+                urls[index] = canvas.toDataURL("image/jpeg", 0.82);
               } else {
-                urls.push("");
+                urls[index] = "";
               }
-              producedCount += 1;
             } catch {
-              urls.push("");
+              urls[index] = "";
             }
-          }
 
-          setVideoThumbnails((prev) => {
-            // 若期间 asset 已被移除，则直接跳过更新
-            if (!project.assets.find((a) => a.id === asset.id)) {
-              return prev;
-            }
-            return {
-              ...prev,
-              [asset.id]: {
-                status: "done",
-                urls,
-                aspectRatio,
-              },
-            };
-          });
+            // 每完成一帧就写回一次，status 在最后一帧标记为 done。
+            setVideoThumbnails((prev) => {
+              const assetStillExists = project.assets.some(
+                (a) => a.id === asset.id,
+              );
+              if (!assetStillExists) {
+                return prev;
+              }
+              const prevEntry = prev[asset.id];
+              const isLast = index === THUMB_COUNT - 1;
+              return {
+                ...prev,
+                [asset.id]: {
+                  status: isLast ? "done" : "loading",
+                  urls: urls.slice(), // 拷贝一份，确保引用变化触发渲染
+                  aspectRatio: prevEntry?.aspectRatio ?? aspectRatio,
+                },
+              };
+            });
+          }
         } catch (error) {
           setVideoThumbnails((prev) => ({
             ...prev,
@@ -473,10 +474,11 @@ export function Timeline() {
                 }
 
                 const assetThumb = videoThumbnails[clip.assetId];
-                if (!assetThumb || assetThumb.status !== "done") {
-                  // 未准备好缩略图时，使用默认渲染（保留原有外观）
+                if (!assetThumb) {
+                  // 该 asset 还未开始生成缩略图，使用默认渲染
                   return undefined;
                 }
+                // 只要已有至少一张有效缩略图就开始渲染，允许渐进展示
                 const urls = assetThumb.urls.filter(Boolean);
                 if (!urls.length) {
                   return undefined;
