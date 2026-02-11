@@ -6,6 +6,7 @@ import { useProjectStore } from "@/stores";
 import "./Preview.css";
 
 export function Preview() {
+  const project = useProjectStore((s) => s.project);
   const videoUrl = useProjectStore((s) => s.videoUrl);
   const currentTime = useProjectStore((s) => s.currentTime);
   const isPlaying = useProjectStore((s) => s.isPlaying);
@@ -36,6 +37,8 @@ export function Preview() {
   const rafIdRef = useRef<number | null>(null);
   /** 最近一次 seek 请求的时间，用于丢弃过期的 getCanvas 结果，避免拖动时乱序帧导致“快速播到”的错觉 */
   const latestSeekTimeRef = useRef(0);
+  /** 当前已同步到画布上的文本片段 id，用于 diff 增删 */
+  const syncedTextClipIdsRef = useRef<Set<string>>(new Set());
 
   // 把 store 的 isPlaying / duration / currentTime 同步到 ref，供 rAF 与异步回调使用
   useEffect(() => {
@@ -52,7 +55,7 @@ export function Preview() {
     }
   }, [isPlaying, currentTime]);
 
-  // 初始化：创建 CanvasEditor（16:9 内嵌）、占位文本、窗口 resize 时重算尺寸
+  // 初始化：创建 CanvasEditor（16:9 内嵌）、窗口 resize 时重算尺寸（文本由“文本轨道片段”在下方 effect 中同步）
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -80,14 +83,6 @@ export function Preview() {
     });
 
     editorRef.current = editor;
-
-    editor.addText({
-      text: "SwiftAV Canvas",
-      x: 40,
-      y: 40,
-      fontSize: 32,
-      fill: "#ffffff",
-    });
 
     const handleResize = () => {
       if (!containerRef.current || !editorRef.current) return;
@@ -129,6 +124,75 @@ export function Preview() {
     if (!editor) return;
     editor.setBackgroundColor(canvasBackgroundColor);
   }, [canvasBackgroundColor]);
+
+  // 按 currentTime 同步“当前可见”的文本轨道片段到画布：在时间范围内的文本 clip 才显示
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    if (!project) {
+      for (const id of syncedTextClipIdsRef.current) {
+        editor.removeText(id);
+      }
+      syncedTextClipIdsRef.current.clear();
+      return;
+    }
+
+    const t = currentTime;
+    const visibleTextClips: Array<{
+      id: string;
+      text: string;
+      x: number;
+      y: number;
+      fontSize: number;
+      fill: string;
+    }> = [];
+
+    for (const track of project.tracks) {
+      if (track.hidden) continue;
+      for (const clip of track.clips) {
+        if (clip.kind !== "text" || clip.start > t || clip.end <= t) continue;
+        const asset = project.assets.find((a) => a.id === clip.assetId);
+        const params = (clip.params ?? {}) as { text?: string; fontSize?: number; fill?: string };
+        visibleTextClips.push({
+          id: clip.id,
+          text: params.text ?? asset?.textMeta?.initialText ?? "",
+          x: clip.transform?.x ?? 0,
+          y: clip.transform?.y ?? 0,
+          fontSize: params.fontSize ?? 32,
+          fill: params.fill ?? "#ffffff",
+        });
+      }
+    }
+
+    const visibleIds = new Set(visibleTextClips.map((c) => c.id));
+    for (const id of syncedTextClipIdsRef.current) {
+      if (!visibleIds.has(id)) {
+        editor.removeText(id);
+        syncedTextClipIdsRef.current.delete(id);
+      }
+    }
+    for (const clip of visibleTextClips) {
+      if (syncedTextClipIdsRef.current.has(clip.id)) {
+        editor.updateText(clip.id, {
+          text: clip.text,
+          x: clip.x,
+          y: clip.y,
+          fontSize: clip.fontSize,
+          fill: clip.fill,
+        });
+      } else {
+        editor.addText({
+          id: clip.id,
+          text: clip.text,
+          x: clip.x,
+          y: clip.y,
+          fontSize: clip.fontSize,
+          fill: clip.fill,
+        });
+        syncedTextClipIdsRef.current.add(clip.id);
+      }
+    }
+  }, [project, currentTime]);
 
   // 视频地址变化时：创建 Input → CanvasSink，创建 displayCanvas 挂到 CanvasEditor，启动 rAF 渲染循环
   useEffect(() => {
