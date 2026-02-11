@@ -59,3 +59,35 @@
   color: #9ca3af;
   font-size: 14px;
 }
+
+/**
+ * 视频 clip 缩略图渲染区域
+ * - 占满 action 高度
+ * - 按等宽网格铺满
+ */
+.swiftav-timeline-video-clip {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.swiftav-timeline-video-clip__thumbs {
+  display: flex;
+  /* 让子元素按照自身宽度水平排布，由 JS 控制重复次数铺满整条 clip */
+  height: 100%;
+}
+
+.swiftav-timeline-video-clip__thumb-cell {
+  /* 每张缩略图宽度由图片本身决定，不被拉伸 */
+  flex: 0 0 auto;
+  height: 100%;
+  overflow: hidden;
+}
+
+.swiftav-timeline-video-clip__thumb-cell img {
+  /* 高度贴合轨道，高宽比按原视频比例，通过 JS 计算重复次数来铺满 */
+  width: auto;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}

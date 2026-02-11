@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { TimelineState } from "@swiftav/timeline";
 import { ReactTimeline } from "@swiftav/timeline";
+import type { Clip } from "@swiftav/project";
+import { CanvasSink } from "mediabunny";
+import { createInputFromUrl } from "@swiftav/media";
 import { PlaybackControls } from "./PlaybackControls";
 import { useProjectStore } from "@/stores";
 import "./Timeline.css";
@@ -46,6 +49,8 @@ function ScaleLabel({ scale }: { scale: number }) {
  * 显示项目的多轨时间轴、播放控制、缩放与同步功能
  */
 export function Timeline() {
+  // 目标单个缩略图在时间轴上的“理想宽度”（像素）
+  const TARGET_THUMB_WIDTH_PX = 80;
   // 取出 project、以及全局播放控制和时间设置函数
   const project = useProjectStore((s) => s.project);
   const setIsPlayingGlobal = useProjectStore((s) => s.setIsPlaying);
@@ -105,6 +110,160 @@ export function Timeline() {
 
   // timeline 外层 dom 容器引用，用于测量宽度
   const timelineContainerRef = useRef<HTMLDivElement | null>(null);
+
+  /**
+   * clipId -> Clip 的快速索引（避免在自定义渲染里反复遍历 tracks）
+   */
+  const clipById = useMemo(() => {
+    if (!project) {
+      return {} as Record<string, Clip>;
+    }
+    const map: Record<string, Clip> = {};
+    for (const track of project.tracks) {
+      for (const clip of track.clips) {
+        map[clip.id] = clip;
+      }
+    }
+    return map;
+  }, [project]);
+
+  /**
+   * 视频缩略图状态：按 asset 维度缓存，供 Timeline 自定义渲染使用
+   */
+  type ThumbnailEntry = {
+    status: "idle" | "loading" | "done" | "error";
+    urls: string[];
+    /**
+     * 缩略图的宽高比（displayWidth / displayHeight），用于在时间轴中按轨道高度还原正确宽度。
+     */
+    aspectRatio?: number;
+  };
+  const [videoThumbnails, setVideoThumbnails] = useState<
+    Record<string, ThumbnailEntry>
+  >({});
+
+  /**
+   * 按 project.assets 增量生成视频缩略图
+   * - 以 asset 为单位生成，所有引用该 asset 的 clip 共享一组缩略图
+   * - 仅在还未生成或之前失败时触发生成
+   */
+  useEffect(() => {
+    if (!project) {
+      return;
+    }
+
+    const videoAssets = project.assets.filter(
+      (a) => a.kind === "video" && a.source,
+    );
+
+    for (const asset of videoAssets) {
+      const existing = videoThumbnails[asset.id];
+      // 若该 asset 已经触发过缩略图生成（不管最终是 loading / done / error），
+      // 就不再在此处重复发起，避免长视频反复重试导致日志一直打印。
+      if (existing && existing.status !== "idle") {
+        continue;
+      }
+
+      // 标记为 loading，避免重复触发
+      setVideoThumbnails((prev) => ({
+        ...prev,
+        [asset.id]: {
+          status: "loading",
+          urls: existing?.urls ?? [],
+          aspectRatio: existing?.aspectRatio,
+        },
+      }));
+
+      void (async () => {
+        try {
+          const input = createInputFromUrl(asset.source!);
+          const videoTrack = await input.getPrimaryVideoTrack();
+          const track: any = videoTrack as any;
+          if (!track || !(await track.canDecode())) {
+            throw new Error("无法解码视频轨道");
+          }
+
+          const firstTimestamp = await track.getFirstTimestamp();
+          const lastTimestamp = await track.computeDuration();
+          const durationSeconds = lastTimestamp - firstTimestamp || 0;
+
+          const aspectRatio =
+            track.displayHeight > 0
+              ? track.displayWidth / track.displayHeight
+              : 16 / 9;
+
+          // 缩略图数量按视频时长动态决定：
+          // - 大约每 2 秒 1 张；
+          // - 最少 16 张，最多 64 张，避免极端长视频生成过多帧。
+          const baseThumbCount =
+            durationSeconds > 0 ? Math.round(durationSeconds / 2) : 16;
+          const THUMB_COUNT = Math.min(64, Math.max(16, baseThumbCount));
+
+          const timestamps = Array.from({ length: THUMB_COUNT }, (_, i) => {
+            const ratio = (i + 0.5) / THUMB_COUNT;
+            return firstTimestamp + ratio * (lastTimestamp - firstTimestamp);
+          });
+
+          // 按轨道内容高度生成缩略图：高度 = 轨道高度，宽度按视频原始宽高比计算，
+          // 这样解码出的缩略图与时间轴上的实际渲染尺寸一致。
+          const targetHeight = TIMELINE_TRACK_CONTENT_HEIGHT_PX;
+          const height = targetHeight;
+          const width = Math.max(1, Math.round(targetHeight * aspectRatio));
+
+          const sink: any = new CanvasSink(track, {
+            width,
+            height,
+            fit: "cover",
+          });
+
+          const urls: string[] = [];
+
+          // 按时间戳依次采样缩略图。
+          // 这里不使用 canvasesAtTimestamps 流式接口，而是逐个调用 getCanvas，
+          // 以规避部分长视频在解码流上触发的 VideoDecoder DataError。
+          let producedCount = 0;
+          for (const ts of timestamps) {
+            try {
+              const wrapped = await sink.getCanvas(ts);
+              if (wrapped) {
+                const canvas = wrapped.canvas as HTMLCanvasElement;
+                urls.push(canvas.toDataURL("image/jpeg", 0.82));
+              } else {
+                urls.push("");
+              }
+              producedCount += 1;
+            } catch {
+              urls.push("");
+            }
+          }
+
+          setVideoThumbnails((prev) => {
+            // 若期间 asset 已被移除，则直接跳过更新
+            if (!project.assets.find((a) => a.id === asset.id)) {
+              return prev;
+            }
+            return {
+              ...prev,
+              [asset.id]: {
+                status: "done",
+                urls,
+                aspectRatio,
+              },
+            };
+          });
+        } catch (error) {
+          setVideoThumbnails((prev) => ({
+            ...prev,
+            [asset.id]: {
+              status: "error",
+              urls: [],
+              aspectRatio,
+            },
+          }));
+        }
+      })();
+    }
+  }, [project, videoThumbnails]);
 
   /**
    * 计算当前时间轴的最大时长
@@ -300,6 +459,87 @@ export function Timeline() {
               editorData={editorData as any}
               // 轨道关联资源字典，key为素材assetId，value为{id, name}
               effects={effects as any}
+              // 自定义 action 渲染：为视频 clip 显示缩略图
+              // @ts-ignore: 第三方类型未暴露 getActionRender，运行时支持该属性
+              getActionRender={(action: any) => {
+                if (!project) return undefined;
+                const clip: Clip | undefined = clipById[action.id];
+                if (!clip) {
+                  return undefined;
+                }
+                if (clip.kind !== "video") {
+                  // 非视频片段走默认渲染
+                  return undefined;
+                }
+
+                const assetThumb = videoThumbnails[clip.assetId];
+                if (!assetThumb || assetThumb.status !== "done") {
+                  // 未准备好缩略图时，使用默认渲染（保留原有外观）
+                  return undefined;
+                }
+                const urls = assetThumb.urls.filter(Boolean);
+                if (!urls.length) {
+                  return undefined;
+                }
+
+                // 目标：每一帧的高度等于轨道高度，宽度按视频原始宽高比计算，
+                // 然后根据 clip 在时间轴上的实际宽度重复足够多次，铺满整条 clip。
+                const aspectRatio = assetThumb.aspectRatio ?? 16 / 9;
+
+                // clip 在时间轴上的宽度（px）
+                const clipDuration = clip.end - clip.start; // 秒
+                const approxClipWidthPx = Math.max(
+                  clipDuration * scaleWidth,
+                  1,
+                );
+
+                // 轨道内容区域高度（px），与 TIMELINE_TRACK_CONTENT_HEIGHT_PX 对应，
+                // 这里用它来估算单个缩略图在时间轴中的实际宽度。
+                const trackContentHeightPx = TIMELINE_TRACK_CONTENT_HEIGHT_PX;
+                const idealThumbWidthPx = trackContentHeightPx * aspectRatio;
+
+                // 至少放一张，最多放 256 张，防止极端长视频导致重复过多
+                const cellCount = Math.max(
+                  1,
+                  Math.min(
+                    256,
+                    Math.ceil(
+                      approxClipWidthPx / Math.max(idealThumbWidthPx, 1),
+                    ),
+                  ),
+                );
+
+                // 将有限的 urls 映射到 cellCount 个格子上：
+                // - 短视频：urls.length 可能 >= cellCount，后半段会被略采样；
+                // - 长视频：urls.length < cellCount，会按时间比例重复，但每块宽度接近「按轨道高度推算的理想宽度」。
+                const cells = Array.from({ length: cellCount }, (_, index) => {
+                  if (urls.length === 1) {
+                    return urls[0]!;
+                  }
+                  const ratio =
+                    cellCount <= 1 ? 0 : index / Math.max(cellCount - 1, 1);
+                  const frameIndex = Math.min(
+                    urls.length - 1,
+                    Math.round(ratio * (urls.length - 1)),
+                  );
+                  return urls[frameIndex]!;
+                });
+
+                return (
+                  <div className="swiftav-timeline-video-clip">
+                    <div className="swiftav-timeline-video-clip__thumbs">
+                      {cells.map((src, index) => (
+                        <div
+                          key={index}
+                          className="swiftav-timeline-video-clip__thumb-cell"
+                        >
+                          <img src={src} alt="" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }}
               // 轨道行高（包含轨道之间的 gap）
               rowHeight={TIMELINE_ROW_HEIGHT_PX}
               // 拖拽移动 clip 结束后：将新 start/end 写回 project（否则预览/导出仍用旧时间）
