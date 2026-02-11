@@ -5,6 +5,14 @@ import { PlaybackControls } from "./PlaybackControls";
 import { useProjectStore } from "@/stores";
 import "./Timeline.css";
 
+/** 刻度标签：将时间（秒）格式化为 分:秒，如 1:30 */
+function ScaleLabel({ scale }: { scale: number }) {
+  const min = Math.floor(scale / 60);
+  const sec = Math.floor(scale % 60);
+  const second = String(sec).padStart(2, "0");
+  return <>{`${min}:${second}`}</>;
+}
+
 export function Timeline() {
   const project = useProjectStore((s) => s.project);
   const setIsPlayingGlobal = useProjectStore((s) => s.setIsPlaying);
@@ -186,10 +194,12 @@ export function Timeline() {
               editorData={editorData as any}
               effects={effects as any}
               scale={1}
+              scaleSplitCount={10}
               scaleWidth={scaleWidth}
               startLeft={20}
               minScaleCount={20}
               maxScaleCount={Math.max(200, Math.ceil(duration) + 20)}
+              getScaleRender={(scale) => <ScaleLabel scale={scale} />}
               onCursorDrag={handleCursorDrag}
               onCursorDragEnd={handleCursorDragEnd}
               onClickTimeArea={(time: number) => {
