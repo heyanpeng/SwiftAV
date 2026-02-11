@@ -41,7 +41,9 @@
   background-size:
     100% calc(100% - var(--swiftav-timeline-track-gap)),
     auto calc(100% - var(--swiftav-timeline-track-gap));
-  background-position: 0 0, 0 0;
+  background-position:
+    0 0,
+    0 0;
 }
 
 /* clip/action 的高度只占据轨道内容区，不覆盖到 gap */
@@ -73,21 +75,28 @@
 
 .swiftav-timeline-video-clip__thumbs {
   display: flex;
-  /* 让子元素按照自身宽度水平排布，由 JS 控制重复次数铺满整条 clip */
+  width: 100%;
   height: 100%;
 }
 
 .swiftav-timeline-video-clip__thumb-cell {
-  /* 每张缩略图宽度由图片本身决定，不被拉伸 */
-  flex: 0 0 auto;
+  /* 等分整条 clip，宽度由缩略图数量决定 */
+  flex: 1 1 0;
   height: 100%;
   overflow: hidden;
 }
 
 .swiftav-timeline-video-clip__thumb-cell img {
-  /* 高度贴合轨道，高宽比按原视频比例，通过 JS 计算重复次数来铺满 */
-  width: auto;
+  /* 填满当前 time-slice cell，高度贴合轨道 */
+  width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+/* 缩略图尚未生成时的占位块：高度等于轨道，颜色略浅 */
+.swiftav-timeline-video-clip__thumb-placeholder {
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.04);
 }

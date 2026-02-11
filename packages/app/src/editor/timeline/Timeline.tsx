@@ -191,11 +191,11 @@ export function Timeline() {
               : 16 / 9;
 
           // 缩略图数量按视频时长动态决定：
-          // - 大约每 2 秒 1 张；
-          // - 最少 16 张，最多 64 张，避免极端长视频生成过多帧。
+          // - 大约每 1 秒 1 张；
+          // - 最少 16 张，最多 256 张，长视频时保持单格宽度不要过大。
           const baseThumbCount =
-            durationSeconds > 0 ? Math.round(durationSeconds / 2) : 16;
-          const THUMB_COUNT = Math.min(64, Math.max(16, baseThumbCount));
+            durationSeconds > 0 ? Math.round(durationSeconds) : 16;
+          const THUMB_COUNT = Math.min(256, Math.max(16, baseThumbCount));
 
           const timestamps = Array.from({ length: THUMB_COUNT }, (_, i) => {
             const ratio = (i + 0.5) / THUMB_COUNT;
@@ -220,17 +220,23 @@ export function Timeline() {
 
           for (let index = 0; index < THUMB_COUNT; index++) {
             const ts = timestamps[index]!;
+
+            let dataUrl = "";
             try {
               const wrapped = await sink.getCanvas(ts);
               if (wrapped) {
                 const canvas = wrapped.canvas as HTMLCanvasElement;
-                urls[index] = canvas.toDataURL("image/jpeg", 0.82);
-              } else {
-                urls[index] = "";
+                dataUrl = canvas.toDataURL("image/jpeg", 0.82);
               }
             } catch {
-              urls[index] = "";
+              // 单次解码失败忽略，由下面的回退逻辑处理
             }
+
+            // 解码失败或返回空帧时，直接回退使用前一张缩略图；若前一张也没有，则保持空白
+            if (!dataUrl && index > 0) {
+              dataUrl = urls[index - 1] ?? "";
+            }
+            urls[index] = dataUrl;
 
             // 每完成一帧就写回一次，status 在最后一帧标记为 done。
             setVideoThumbnails((prev) => {
@@ -253,14 +259,18 @@ export function Timeline() {
             });
           }
         } catch (error) {
-          setVideoThumbnails((prev) => ({
-            ...prev,
-            [asset.id]: {
-              status: "error",
-              urls: [],
-              aspectRatio,
-            },
-          }));
+          setVideoThumbnails((prev) => {
+            const prevEntry = prev[asset.id];
+            return {
+              ...prev,
+              [asset.id]: {
+                status: "error",
+                urls: [],
+                // 若此前已成功生成过，则沿用原来的宽高比；否则给一个合理的默认值
+                aspectRatio: prevEntry?.aspectRatio ?? 16 / 9,
+              },
+            };
+          });
         }
       })();
     }
@@ -478,54 +488,14 @@ export function Timeline() {
                   // 该 asset 还未开始生成缩略图，使用默认渲染
                   return undefined;
                 }
-                // 只要已有至少一张有效缩略图就开始渲染，允许渐进展示
-                const urls = assetThumb.urls.filter(Boolean);
+
+                const urls = assetThumb.urls;
+                // 只要有至少一个切片，就按时间切片渲染；未生成的切片用“空图”占位
                 if (!urls.length) {
                   return undefined;
                 }
 
-                // 目标：每一帧的高度等于轨道高度，宽度按视频原始宽高比计算，
-                // 然后根据 clip 在时间轴上的实际宽度重复足够多次，铺满整条 clip。
-                const aspectRatio = assetThumb.aspectRatio ?? 16 / 9;
-
-                // clip 在时间轴上的宽度（px）
-                const clipDuration = clip.end - clip.start; // 秒
-                const approxClipWidthPx = Math.max(
-                  clipDuration * scaleWidth,
-                  1,
-                );
-
-                // 轨道内容区域高度（px），与 TIMELINE_TRACK_CONTENT_HEIGHT_PX 对应，
-                // 这里用它来估算单个缩略图在时间轴中的实际宽度。
-                const trackContentHeightPx = TIMELINE_TRACK_CONTENT_HEIGHT_PX;
-                const idealThumbWidthPx = trackContentHeightPx * aspectRatio;
-
-                // 至少放一张，最多放 256 张，防止极端长视频导致重复过多
-                const cellCount = Math.max(
-                  1,
-                  Math.min(
-                    256,
-                    Math.ceil(
-                      approxClipWidthPx / Math.max(idealThumbWidthPx, 1),
-                    ),
-                  ),
-                );
-
-                // 将有限的 urls 映射到 cellCount 个格子上：
-                // - 短视频：urls.length 可能 >= cellCount，后半段会被略采样；
-                // - 长视频：urls.length < cellCount，会按时间比例重复，但每块宽度接近「按轨道高度推算的理想宽度」。
-                const cells = Array.from({ length: cellCount }, (_, index) => {
-                  if (urls.length === 1) {
-                    return urls[0]!;
-                  }
-                  const ratio =
-                    cellCount <= 1 ? 0 : index / Math.max(cellCount - 1, 1);
-                  const frameIndex = Math.min(
-                    urls.length - 1,
-                    Math.round(ratio * (urls.length - 1)),
-                  );
-                  return urls[frameIndex]!;
-                });
+                const cells = urls;
 
                 return (
                   <div className="swiftav-timeline-video-clip">
@@ -535,7 +505,11 @@ export function Timeline() {
                           key={index}
                           className="swiftav-timeline-video-clip__thumb-cell"
                         >
-                          <img src={src} alt="" />
+                          {src ? (
+                            <img src={src} alt="" />
+                          ) : (
+                            <div className="swiftav-timeline-video-clip__thumb-placeholder" />
+                          )}
                         </div>
                       ))}
                     </div>
