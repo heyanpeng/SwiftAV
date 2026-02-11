@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import type { CanvasEditor } from "@swiftav/canvas";
 import { CanvasSink, type Input, type WrappedCanvas } from "mediabunny";
 import { createInputFromUrl } from "@swiftav/media";
+import { findClipById } from "@swiftav/project";
 import { useProjectStore } from "@/stores";
 import { getActiveVideoClips } from "./utils";
 
@@ -80,16 +81,16 @@ export function usePreviewVideo(
   }, [isPlaying, currentTime]);
 
   /**
-   * 监听 project 变更：为每个视频 asset 创建 Input + CanvasSink。
+   * 监听 project 变更：仅为新增的视频 asset 创建 Input + CanvasSink，移除已不存在的 asset 的 sink。
+   * 不清理已有视频节点与 syncedVideoClipIdsRef/clipCanvasesRef，避免添加新视频时旧视频位置被重置。
    * 成功后 setSinksReadyTick 触发当前帧同步。
-   * 清理时移除所有视频片段与 sinks。
    */
   useEffect(() => {
     const editor = editorRef.current;
     if (!editor) {
       return;
     }
-    // 无 project 时，直接移除所有已有视频片段和 sinks
+    // 无 project 时，移除所有已有视频片段和 sinks
     if (!project) {
       for (const id of syncedVideoClipIdsRef.current) {
         editor.removeVideo(id);
@@ -100,30 +101,42 @@ export function usePreviewVideo(
       return;
     }
 
-    // 获取舞台尺寸
     const stageSize = editor.getStage().size();
     const width = Math.max(1, Math.round(stageSize.width));
     const height = Math.max(1, Math.round(stageSize.height));
-    // 获取所有有 source 的视频 asset
     const videoAssets = project.assets.filter(
       (a) => a.kind === "video" && a.source,
     );
+    const currentAssetIds = new Set(videoAssets.map((a) => a.id));
+    const sinks = sinksByAssetRef.current;
+
+    // 移除已不存在或 asset 已删的 clip 的节点，并清理 refs
+    for (const clipId of [...syncedVideoClipIdsRef.current]) {
+      const clip = findClipById(project, clipId);
+      if (!clip || !currentAssetIds.has(clip.assetId)) {
+        editor.removeVideo(clipId);
+        syncedVideoClipIdsRef.current.delete(clipId);
+        clipCanvasesRef.current.delete(clipId);
+        clipIteratorsRef.current.delete(clipId);
+        clipNextFrameRef.current.delete(clipId);
+      }
+    }
+    // 移除已不在 project 中的 asset 的 sink
+    for (const [assetId] of [...sinks]) {
+      if (!currentAssetIds.has(assetId)) {
+        sinks.delete(assetId);
+      }
+    }
 
     let cancelled = false;
 
-    // 并发 setup，逐个为每个 asset 创建 sink
     const setup = async () => {
-      // 先清空已经同步的视频片段
-      for (const id of syncedVideoClipIdsRef.current) {
-        editor.removeVideo(id);
-      }
-      syncedVideoClipIdsRef.current.clear();
-      clipCanvasesRef.current.clear();
-      sinksByAssetRef.current.clear();
-
       for (const asset of videoAssets) {
         if (cancelled) {
           return;
+        }
+        if (sinksByAssetRef.current.has(asset.id)) {
+          continue;
         }
         try {
           const input = createInputFromUrl(asset.source);
@@ -134,8 +147,8 @@ export function usePreviewVideo(
           const sink = new CanvasSink(videoTrack, {
             width,
             height,
-            fit: "cover", // 按 cover 适配
-            poolSize: 2, // 缓存池大小
+            fit: "cover",
+            poolSize: 2,
           });
           sinksByAssetRef.current.set(asset.id, { input, sink });
         } catch {
@@ -143,25 +156,15 @@ export function usePreviewVideo(
         }
       }
       if (!cancelled) {
-        // sinks 准备好，通知同步首帧
         setSinksReadyTick((c) => c + 1);
       }
     };
 
     void setup();
 
-    // 清理时标记 cancelled，彻底移除所有片段与 sinks
     return () => {
       cancelled = true;
-      const ed = editorRef.current;
-      if (ed) {
-        for (const id of syncedVideoClipIdsRef.current) {
-          ed.removeVideo(id);
-        }
-      }
-      syncedVideoClipIdsRef.current.clear();
-      clipCanvasesRef.current.clear();
-      sinksByAssetRef.current.clear();
+      // 仅取消本次 setup，不在此清理节点与 refs，避免 project 快速变更时误清
     };
   }, [editorRef, project]);
 
