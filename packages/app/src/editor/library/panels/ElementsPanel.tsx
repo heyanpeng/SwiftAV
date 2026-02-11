@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ArrowLeft, ChevronRight } from "lucide-react";
+import { createId } from "@swiftav/utils";
 import "./ElementsPanel.css";
 
 type ElementItem = {
@@ -17,15 +18,15 @@ const categories = [
   { id: "gifs", label: "GIF 动图", type: "gif" as const },
 ];
 
-// 模拟数据
+// 模拟数据（id 统一用 @swiftav/utils createId）
 const mockElements: Record<string, ElementItem[]> = {
   shapes: Array.from({ length: 24 }, (_, i) => ({
-    id: `shape-${i + 1}`,
+    id: createId("shape"),
     type: "shape" as const,
     color: `hsl(${(i * 15) % 360}, 70%, 50%)`,
   })),
-  stickers: Array.from({ length: 20 }, (_, i) => ({
-    id: `sticker-${i + 1}`,
+  stickers: Array.from({ length: 20 }, () => ({
+    id: createId("sticker"),
     type: "sticker" as const,
     thumbnailUrl: ``,
   })),
@@ -50,13 +51,13 @@ const mockElements: Record<string, ElementItem[]> = {
     "🤮",
     "🤧",
     "🤯",
-  ].map((emoji, i) => ({
-    id: `emoji-${i + 1}`,
+  ].map((emoji) => ({
+    id: createId("emoji"),
     type: "emoji" as const,
     emoji,
   })),
-  gifs: Array.from({ length: 20 }, (_, i) => ({
-    id: `gif-${i + 1}`,
+  gifs: Array.from({ length: 20 }, () => ({
+    id: createId("gif"),
     type: "gif" as const,
     thumbnailUrl: ``,
   })),

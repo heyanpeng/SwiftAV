@@ -11,6 +11,7 @@ import {
 } from "@swiftav/project";
 import { probeMedia } from "@swiftav/media";
 import { renderVideoWithCanvasLoop } from "@swiftav/renderer";
+import { createId } from "@swiftav/utils";
 
 /**
  * 工程相关的全局状态。
@@ -67,13 +68,6 @@ export interface ProjectStoreActions {
 }
 
 export type ProjectStore = ProjectStoreState & ProjectStoreActions;
-
-/**
- * 简单的 id 生成工具。
- */
-function createId(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
 
 export const useProjectStore = create<ProjectStore>((set, get) => ({
   project: null,

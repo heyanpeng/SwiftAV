@@ -13,6 +13,7 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "src"),
       "@swiftav/canvas": path.resolve(__dirname, "../@swiftav/canvas/src"),
+      "@swiftav/utils": path.resolve(__dirname, "../@swiftav/utils/src"),
     },
   },
 });

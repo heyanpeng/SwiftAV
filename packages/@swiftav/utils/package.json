@@ -1,5 +1,5 @@
 {
-  "name": "@swiftav/canvas",
+  "name": "@swiftav/utils",
   "version": "0.0.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -11,17 +11,14 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
     "lint": "eslint ."
   },
   "dependencies": {
-    "@swiftav/utils": "workspace:*",
-    "konva": "^9.3.16"
+    "snowflake-id": "^1.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
@@ -32,4 +29,3 @@
     "typescript-eslint": "^8.46.4"
   }
 }
-

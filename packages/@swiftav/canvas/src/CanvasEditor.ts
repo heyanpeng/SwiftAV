@@ -1,5 +1,5 @@
 import Konva from "konva";
-import { createId } from "./createId";
+import { createId } from "@swiftav/utils";
 import type {
   CanvasEditorOptions,
   ImageOptions,
