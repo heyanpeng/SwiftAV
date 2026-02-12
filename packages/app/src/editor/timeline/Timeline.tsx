@@ -4,7 +4,7 @@ import { ReactTimeline } from "@swiftav/timeline";
 import type { Clip } from "@swiftav/project";
 import { CanvasSink } from "mediabunny";
 import { createInputFromUrl } from "@swiftav/media";
-import { PlaybackControls } from "./PlaybackControls";
+import { PlaybackControls } from "./playbackControls/PlaybackControls";
 import { useProjectStore } from "@/stores";
 import "./Timeline.css";
 
@@ -188,9 +188,7 @@ export function Timeline() {
       Math.max(
         16,
         durationSeconds > 0
-          ? Math.ceil(
-              (durationSeconds * scaleWidth) / MIN_THUMB_CELL_WIDTH_PX,
-            )
+          ? Math.ceil((durationSeconds * scaleWidth) / MIN_THUMB_CELL_WIDTH_PX)
           : 16,
       ),
     );
@@ -380,8 +378,7 @@ export function Timeline() {
           for (let index = currentLength; index < targetCount; index++) {
             const ratio = (index + 0.5) / targetCount;
             const ts =
-              firstTimestamp +
-              ratio * (lastTimestamp - firstTimestamp);
+              firstTimestamp + ratio * (lastTimestamp - firstTimestamp);
 
             let dataUrl = "";
             try {
@@ -396,7 +393,11 @@ export function Timeline() {
 
             setVideoThumbnails((prev) => {
               const cur = prev[asset.id];
-              if (!cur || cur.status !== "loading" || cur.urls.length >= targetCount) {
+              if (
+                !cur ||
+                cur.status !== "loading" ||
+                cur.urls.length >= targetCount
+              ) {
                 return prev;
               }
               const fallback =
@@ -686,7 +687,10 @@ export function Timeline() {
                 const clipWidthPx = (action.end - action.start) * scaleWidth;
                 const maxCells = Math.max(
                   1,
-                  Math.floor(clipWidthPx / Math.max(cellWidthPx, MIN_THUMB_CELL_WIDTH_PX)),
+                  Math.floor(
+                    clipWidthPx /
+                      Math.max(cellWidthPx, MIN_THUMB_CELL_WIDTH_PX),
+                  ),
                 );
                 const cellCount = Math.min(urls.length, maxCells);
                 const inPoint = clip.inPoint ?? 0;
@@ -696,8 +700,7 @@ export function Timeline() {
                 // 按时间匹配：每格对应时间轴中心点的素材时间，再在 timestamps 中取最近一帧
                 const cells = Array.from({ length: cellCount }, (_, j) => {
                   const sourceTime =
-                    inPoint +
-                    ((j + 0.5) / cellCount) * (clipEnd - clipStart);
+                    inPoint + ((j + 0.5) / cellCount) * (clipEnd - clipStart);
                   const idx = findClosestTimestampIndex(timestamps, sourceTime);
                   return urls[Math.min(idx, urls.length - 1)] ?? "";
                 });

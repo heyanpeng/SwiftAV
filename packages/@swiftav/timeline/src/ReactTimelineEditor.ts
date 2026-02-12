@@ -7,8 +7,7 @@
  */
 
 // 注入第三方组件的默认样式
-import '@xzdarcy/react-timeline-editor/dist/react-timeline-editor.css';
+import "@xzdarcy/react-timeline-editor/dist/react-timeline-editor.css";
 
-export { Timeline as ReactTimeline } from '@xzdarcy/react-timeline-editor';
-export type { TimelineState } from '@xzdarcy/react-timeline-editor';
-
+export { Timeline as ReactTimeline } from "@xzdarcy/react-timeline-editor";
+export type { TimelineState } from "@xzdarcy/react-timeline-editor";

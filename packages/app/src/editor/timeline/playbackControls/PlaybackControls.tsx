@@ -1,4 +1,5 @@
 import "./PlaybackControls.css";
+import { formatTime } from "@swiftav/utils";
 import {
   Scissors,
   Copy,
@@ -26,17 +27,6 @@ type PlaybackControlsProps = {
   onZoomOut: () => void; // 时间轴缩小回调
   onZoomIn: () => void; // 时间轴放大回调
   onFitToView: () => void; // 一键适应视图区回调
-};
-
-// 时间格式化工具: 转换秒为 mm:ss.ms 字符串
-const formatTime = (time: number): string => {
-  const clamped = Math.max(0, time);
-  const minutes = Math.floor(clamped / 60);
-  const seconds = Math.floor(clamped % 60);
-  const ms = Math.floor((clamped * 100) % 100); // 两位毫秒
-  return `${minutes}:${seconds.toString().padStart(2, "0")}.${ms
-    .toString()
-    .padStart(2, "0")}`;
 };
 
 // 播放控制条主组件
