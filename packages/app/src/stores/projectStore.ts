@@ -33,12 +33,19 @@ import type { ProjectStore } from "./projectStore.types";
  *   Preview 与导出仍会按旧时间区间渲染。
  */
 export const useProjectStore = create<ProjectStore>((set, get) => ({
+  // 当前正在编辑的项目数据（Project 对象），为 null 表示尚未载入或新建
   project: null,
+  // 预览播放器的当前时间点（以秒为单位）
   currentTime: 0,
+  // 当前项目的总时长，会根据片段和轨道自动计算更新
   duration: 0,
+  // 播放器当前是否处于播放状态
   isPlaying: false,
+  // 界面是否处于加载中（例如媒体探测、工程导入、渲染等异步任务时）
   loading: false,
+  // 当前用于预览的视频源（为浏览器 Blob URL 或其他），为 null 时无预览
   videoUrl: null,
+  // 预览区域画布的背景色（CSS 颜色字符串）
   canvasBackgroundColor: "#000000",
 
   /**
@@ -301,7 +308,9 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
    * - 目前导出逻辑只使用 `mainAsset`（第一个 video asset）做逐帧采样，
    *   尚未把多轨合成、文字/图片覆盖层等纳入导出流程（未来可复用 Preview 的渲染管线）。
    */
-  async exportToMp4(onProgress?: (progress: number) => void): Promise<Blob | null> {
+  async exportToMp4(
+    onProgress?: (progress: number) => void,
+  ): Promise<Blob | null> {
     const { project } = get();
     if (!project) return null;
     if (!project.assets.length) return null;
@@ -327,10 +336,16 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
       // 等待 metadata，确保 duration/尺寸可用
       await new Promise<void>((resolve, reject) => {
-        video.addEventListener("loadedmetadata", () => resolve(), { once: true });
-        video.addEventListener("error", () => reject(new Error("视频加载失败")), {
+        video.addEventListener("loadedmetadata", () => resolve(), {
           once: true,
         });
+        video.addEventListener(
+          "error",
+          () => reject(new Error("视频加载失败")),
+          {
+            once: true,
+          },
+        );
       });
 
       const duration = getProjectDuration(project);
@@ -381,4 +396,3 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     }
   },
 }));
-
