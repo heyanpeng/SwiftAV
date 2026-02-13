@@ -263,19 +263,20 @@ export function Timeline() {
     param: { row: unknown; time: number },
   ) => {
     const target = e.target as HTMLElement;
-    if (target.closest?.("[data-swiftav-clip]") || target.closest?.(".timeline-editor-action") || target.closest?.("[class*='timeline-editor-action']")) {
+    if (
+      target.closest?.("[data-swiftav-clip]") ||
+      target.closest?.(".timeline-editor-action") ||
+      target.closest?.("[class*='timeline-editor-action']")
+    ) {
       return;
     }
     handleClickTimeArea(param.time);
   };
 
   /** 时间轴内容区横向滚动时同步 scrollLeft，供「任意空白处点击」换算时间用 */
-  const handleTimelineScroll = useCallback(
-    (params: { scrollLeft: number }) => {
-      timelineScrollLeftRef.current = params.scrollLeft;
-    },
-    [],
-  );
+  const handleTimelineScroll = useCallback((params: { scrollLeft: number }) => {
+    timelineScrollLeftRef.current = params.scrollLeft;
+  }, []);
 
   /**
    * 点击时间轴容器空白处（刻度区、轨道空白、轨道间隙等）：根据 clientX 换算时间并跳转。
@@ -284,7 +285,11 @@ export function Timeline() {
   const handleTimelineContainerClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       const target = e.target as HTMLElement;
-      if (target.closest?.("[data-swiftav-clip]") || target.closest?.(".timeline-editor-action") || target.closest?.("[class*='timeline-editor-action']")) {
+      if (
+        target.closest?.("[data-swiftav-clip]") ||
+        target.closest?.(".timeline-editor-action") ||
+        target.closest?.("[class*='timeline-editor-action']")
+      ) {
         return;
       }
       const container = timelineContainerRef.current;

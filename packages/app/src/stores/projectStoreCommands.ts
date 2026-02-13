@@ -185,3 +185,65 @@ export function createToggleTrackMutedCommand(
 		},
 	};
 }
+
+/** 添加视频（新建工程或追加轨道/clip）：undo 恢复添加前状态并 revoke blob；redo 再次调用 loadVideoFile（内部 skipHistory） */
+export type LoadVideoPrevState = {
+	prevProject: Project | null;
+	prevVideoUrl: string | null;
+	prevDuration: number;
+	prevCurrentTime: number;
+};
+
+type GetStateWithLoadVideo = () => ReturnType<GetState> & {
+	loadVideoFile(file: File, options?: { skipHistory?: boolean }): Promise<void>;
+};
+
+export function createLoadVideoCommand(
+	get: GetStateWithLoadVideo,
+	set: SetState,
+	file: File,
+	prev: LoadVideoPrevState,
+	addedBlobUrl: string,
+): Command {
+	return {
+		execute: () => {
+			return get().loadVideoFile(file, { skipHistory: true });
+		},
+		undo: () => {
+			URL.revokeObjectURL(addedBlobUrl);
+			if (prev.prevProject === null) {
+				set({
+					project: null,
+					videoUrl: prev.prevVideoUrl,
+					duration: 0,
+					currentTime: 0,
+				});
+			} else {
+				const duration = getProjectDuration(prev.prevProject);
+				const currentTime = Math.min(prev.prevCurrentTime, duration);
+				set({
+					project: prev.prevProject,
+					videoUrl: prev.prevVideoUrl,
+					duration,
+					currentTime,
+				});
+			}
+		},
+	};
+}
+
+/** 设置画布背景色：存前后颜色，undo/redo 对调 */
+export function createSetCanvasBackgroundColorCommand(
+	set: SetState,
+	prevColor: string,
+	nextColor: string,
+): Command {
+	return {
+		execute: () => {
+			set({ canvasBackgroundColor: nextColor });
+		},
+		undo: () => {
+			set({ canvasBackgroundColor: prevColor });
+		},
+	};
+}

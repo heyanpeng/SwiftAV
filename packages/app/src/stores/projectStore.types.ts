@@ -98,7 +98,11 @@ export interface ProjectStoreActions {
    * - 会创建 blob URL，并更新 `videoUrl`。
    * - 会更新 `loading`、并重新计算 `duration`。
    */
-  loadVideoFile(file: File): Promise<void>;
+  /** options.skipHistory 为 true 时仅用于 redo，不压入历史 */
+  loadVideoFile(
+    file: File,
+    options?: { skipHistory?: boolean },
+  ): Promise<void>;
 
   /**
    * 更新当前预览时间（秒）。
@@ -162,9 +166,9 @@ export interface ProjectStoreActions {
   undo(): void;
 
   /**
-   * 重做最近一次撤销。
+   * 重做最近一次撤销（可能为 async，如添加视频）。
    */
-  redo(): void;
+  redo(): void | Promise<void>;
 
   /** 内部使用：将一条命令压入撤销栈，并清空重做栈。 */
   pushHistory(cmd: Command): void;

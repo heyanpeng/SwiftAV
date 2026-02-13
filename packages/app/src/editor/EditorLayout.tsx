@@ -12,6 +12,9 @@ import defaultVideoUrl from "@/assets/default.mp4?url";
 export function EditorLayout() {
   // 挂载时若无工程则加载默认视频
   useEffect(() => {
+    if (1) {
+      return;
+    }
     const { project, loadVideoFile } = useProjectStore.getState();
     if (project) {
       return;

@@ -25,6 +25,8 @@ import {
   createCutClipCommand,
   createReorderTracksCommand,
   createToggleTrackMutedCommand,
+  createLoadVideoCommand,
+  createSetCanvasBackgroundColorCommand,
 } from "./projectStoreCommands";
 import type { ProjectStore } from "./projectStore.types";
 
@@ -139,13 +141,23 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   /**
    * 重做上一条撤销的命令（redo）
    */
-  redo() {
+  async redo() {
     const future = get().historyFuture;
     if (future.length === 0) {
       return;
     }
     const cmd = future[future.length - 1];
-    cmd.execute();
+    const result = cmd.execute();
+    const promise =
+      typeof result === "object" &&
+      result !== null &&
+      "then" in result &&
+      typeof (result as Promise<void>).then === "function"
+        ? (result as Promise<void>)
+        : null;
+    if (promise) {
+      await promise;
+    }
     set({
       historyPast: [...get().historyPast, cmd],
       historyFuture: future.slice(0, -1),
@@ -163,7 +175,15 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
    * - 会创建 blob URL 并写入 asset.source / store.videoUrl。
    * - 会切换 `loading`，并在落盘前重置 `isPlaying=false`。
    */
-  async loadVideoFile(file: File) {
+  async loadVideoFile(
+    file: File,
+    options?: { skipHistory?: boolean },
+  ) {
+    const prevProject = get().project;
+    const prevVideoUrl = get().videoUrl;
+    const prevDuration = get().duration;
+    const prevCurrentTime = get().currentTime;
+
     // 为本地文件创建 blob URL，供视频预览与时间轴素材引用
     const blobUrl = URL.createObjectURL(file);
 
@@ -331,6 +351,17 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         // videoUrl 当前仅用于主视频预览；这里写入最新导入的视频
         videoUrl: blobUrl,
       });
+
+      if (!options?.skipHistory) {
+        get().pushHistory(
+          createLoadVideoCommand(get, set, file, {
+            prevProject,
+            prevVideoUrl,
+            prevDuration,
+            prevCurrentTime,
+          }, blobUrl),
+        );
+      }
     } finally {
       set({ loading: false });
     }
@@ -357,7 +388,11 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
    * 注意：当前仅影响预览，不参与导出（若要导出背景色，需要写入工程数据结构）。
    */
   setCanvasBackgroundColor(color: string) {
+    const prevColor = get().canvasBackgroundColor;
     set({ canvasBackgroundColor: color });
+    get().pushHistory(
+      createSetCanvasBackgroundColorCommand(set, prevColor, color),
+    );
   },
 
   /**
