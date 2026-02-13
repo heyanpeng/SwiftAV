@@ -61,6 +61,8 @@ export function Timeline() {
   const timelineRef = useRef<TimelineState | null>(null);
   /** timeline 外层 dom 容器引用，用于测量宽度 */
   const timelineContainerRef = useRef<HTMLDivElement | null>(null);
+  /** 时间轴横向滚动位置，用于「任意空白处点击」时根据 clientX 换算时间 */
+  const timelineScrollLeftRef = useRef(0);
 
   /** 播放状态 */
   const [isPlaying, setIsPlaying] = useState(false);
@@ -213,6 +215,7 @@ export function Timeline() {
     return (
       <div
         className="swiftav-timeline-video-clip__thumbs"
+        data-swiftav-clip
         style={
           {
             "--thumb-aspect-ratio": aspectRatio,
@@ -233,32 +236,82 @@ export function Timeline() {
   };
 
   /**
-   * 时间轴空白区域点击：跳到指定时间并暂停播放，同时同步本地与全局播放状态；不清除 clip 选中态。
+   * 时间轴空白区域点击：跳到指定时间并暂停播放，同时同步本地与全局播放状态，并取消 clip 选中态。
+   * 时间限制在 [0, duration]，不超过视频总时长。
    */
   const handleClickTimeArea = (time: number) => {
+    const clampedTime = Math.max(0, Math.min(time, duration));
     const timelineState = timelineRef.current;
-    // 暂停播放并跳转到点击时间点
     if (timelineState) {
       timelineState.pause();
-      timelineState.setTime(time);
+      timelineState.setTime(clampedTime);
     }
-    // 更新本地播放状态和当前时间
     setIsPlaying(false);
-    setCurrentTime(time);
-    // 同步全局状态
-    setCurrentTimeGlobal(time);
+    setCurrentTime(clampedTime);
+    setCurrentTimeGlobal(clampedTime);
     setIsPlayingGlobal(false);
-    // 返回 false 禁止事件冒泡
+    setSelectedClipId(null);
     return false;
   };
 
-  /** 仅点击 clip（不包含拖拽）：切换该 clip 的选中态，再次点击同一 clip 则取消选中 */
+  /**
+   * 点击轨道行空白处：与点击刻度区一致，跳到该位置时间并暂停播放。
+   * 三方库 onClickRow 在点击行（含 clip）时都会触发，需排除点击在 clip 上的情况，否则会误跳转。
+   */
+  const handleClickRow = (
+    e: React.MouseEvent<HTMLElement, MouseEvent>,
+    param: { row: unknown; time: number },
+  ) => {
+    const target = e.target as HTMLElement;
+    if (target.closest?.("[data-swiftav-clip]") || target.closest?.(".timeline-editor-action") || target.closest?.("[class*='timeline-editor-action']")) {
+      return;
+    }
+    handleClickTimeArea(param.time);
+  };
+
+  /** 时间轴内容区横向滚动时同步 scrollLeft，供「任意空白处点击」换算时间用 */
+  const handleTimelineScroll = useCallback(
+    (params: { scrollLeft: number }) => {
+      timelineScrollLeftRef.current = params.scrollLeft;
+    },
+    [],
+  );
+
+  /**
+   * 点击时间轴容器空白处（刻度区、轨道空白、轨道间隙等）：根据 clientX 换算时间并跳转。
+   * 点击轨道上的 clip 时不跳转时间（仅由 onClickActionOnly 处理选中态）。
+   */
+  const handleTimelineContainerClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const target = e.target as HTMLElement;
+      if (target.closest?.("[data-swiftav-clip]") || target.closest?.(".timeline-editor-action") || target.closest?.("[class*='timeline-editor-action']")) {
+        return;
+      }
+      const container = timelineContainerRef.current;
+      if (!container || editorData.length === 0) {
+        return;
+      }
+      const rect = container.getBoundingClientRect();
+      const startLeft = 20;
+      const contentLeft = rect.left + TIMELINE_ROW_PREFIX_WIDTH_PX;
+      if (e.clientX < contentLeft) {
+        return;
+      }
+      const scrollLeft = timelineScrollLeftRef.current;
+      const pixelFromStart = e.clientX - contentLeft + scrollLeft - startLeft;
+      const time = (pixelFromStart / scaleWidth) * 1;
+      handleClickTimeArea(time);
+    },
+    [editorData.length, scaleWidth],
+  );
+
+  /** 仅点击 clip（不包含拖拽）：选中该 clip；再次点击同一 clip 保持选中；取消选中需点击非 clip 区域 */
   const handleClickActionOnly = (
     _e: React.MouseEvent,
     { action }: { action: { id: string } },
   ) => {
     requestAnimationFrame(() => {
-      setSelectedClipId((prev) => (prev === action.id ? null : action.id));
+      setSelectedClipId(action.id);
     });
   };
 
@@ -485,8 +538,13 @@ export function Timeline() {
             </p>
           </div>
         ) : (
-          // 主时间轴区域
-          <div className="timeline-editor" ref={timelineContainerRef}>
+          // 主时间轴区域（任意空白处点击都会根据 clientX 跳转时间）
+          <div
+            className="timeline-editor"
+            ref={timelineContainerRef}
+            onClick={handleTimelineContainerClick}
+            role="presentation"
+          >
             <ReactTimeline
               ref={timelineRef}
               // @ts-ignore: 第三方库未导出 TS 类型。后续有风险请逐步替换。
@@ -536,8 +594,11 @@ export function Timeline() {
               onCursorDrag={handleCursorDrag}
               // 光标拖动结束事件（常用于同步全局状态）
               onCursorDragEnd={handleCursorDragEnd}
+              onScroll={handleTimelineScroll}
               // 区域点击回调，跳到指定时间并暂停播放，需多处更新本地及全局播放状态
               onClickTimeArea={handleClickTimeArea}
+              // 点击轨道行空白处：同样跳到该位置时间并暂停（时间线跟着动）
+              onClickRow={handleClickRow}
               // 仅点击 clip 时：切换选中态（库会根据 action.selected 加 class）
               onClickActionOnly={handleClickActionOnly}
               // 启用轨道行拖拽，拖拽结束后按新顺序写回 project.tracks 的 order
