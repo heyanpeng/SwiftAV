@@ -44,6 +44,7 @@ export function Timeline() {
   const setCurrentTimeGlobal = useProjectStore((s) => s.setCurrentTime);
   const updateClipTiming = useProjectStore((s) => s.updateClipTiming);
   const duplicateClip = useProjectStore((s) => s.duplicateClip);
+  const deleteClip = useProjectStore((s) => s.deleteClip);
 
   // ================
   // ref & 本地 state
@@ -417,6 +418,14 @@ export function Timeline() {
         onCopyClip={
           selectedClipId
             ? () => duplicateClip(selectedClipId)
+            : undefined
+        }
+        onDeleteClip={
+          selectedClipId
+            ? () => {
+                deleteClip(selectedClipId);
+                setSelectedClipId(null);
+              }
             : undefined
         }
       />

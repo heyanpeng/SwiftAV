@@ -28,6 +28,7 @@ type PlaybackControlsProps = {
   onZoomIn: () => void; // 时间轴放大回调
   onFitToView: () => void; // 一键适应视图区回调
   onCopyClip?: () => void; // 复制当前选中的 clip 到同轨道末尾，无选中时可不传或置为 undefined
+  onDeleteClip?: () => void; // 删除当前选中的 clip，无选中时可不传或置为 undefined
 };
 
 // 播放控制条主组件
@@ -43,6 +44,7 @@ export const PlaybackControls = ({
   onZoomIn,
   onFitToView,
   onCopyClip,
+  onDeleteClip,
 }: PlaybackControlsProps) => {
   return (
     <div className="playback-controls">
@@ -59,7 +61,12 @@ export const PlaybackControls = ({
         >
           <Copy size={16} />
         </button>
-        <button className="playback-controls__btn" disabled title="Delete">
+        <button
+          className="playback-controls__btn"
+          disabled={!onDeleteClip}
+          title="Delete"
+          onClick={onDeleteClip}
+        >
           <Trash2 size={16} />
         </button>
       </div>

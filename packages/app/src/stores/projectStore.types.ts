@@ -111,6 +111,12 @@ export interface ProjectStoreActions {
   duplicateClip(clipId: string): void;
 
   /**
+   * 从工程中删除指定 clip。
+   * 会重新计算 duration，若当前播放时间超过新时长则回退。
+   */
+  deleteClip(clipId: string): void;
+
+  /**
    * 更新时间轴上某个 clip 的播放区间（start/end，单位：秒）。
    *
    * 用途：

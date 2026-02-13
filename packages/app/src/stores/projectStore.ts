@@ -10,6 +10,7 @@ import {
   updateClip,
   getProjectDuration,
   findClipById,
+  removeClip,
 } from "@swiftav/project";
 import { probeMedia } from "@swiftav/media";
 import { renderVideoWithCanvasLoop } from "@swiftav/renderer";
@@ -282,6 +283,22 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     set({
       project: nextProject,
       duration: getProjectDuration(nextProject),
+    });
+  },
+
+  /**
+   * 从工程中删除指定 clip，并重新计算 duration、回退越界的 currentTime。
+   */
+  deleteClip(clipId: string) {
+    const project = get().project;
+    if (!project) return;
+    const nextProject = removeClip(project, clipId as Clip["id"]);
+    const duration = getProjectDuration(nextProject);
+    const currentTime = Math.min(get().currentTime, duration);
+    set({
+      project: nextProject,
+      duration,
+      currentTime,
     });
   },
 
