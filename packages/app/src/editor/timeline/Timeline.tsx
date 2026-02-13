@@ -195,10 +195,9 @@ export function Timeline() {
   };
 
   /**
-   * 时间轴空白区域点击：跳到指定时间并暂停播放，同时同步本地与全局播放状态；并清除 clip 选中态。
+   * 时间轴空白区域点击：跳到指定时间并暂停播放，同时同步本地与全局播放状态；不清除 clip 选中态。
    */
   const handleClickTimeArea = (time: number) => {
-    setSelectedClipId(null);
     const timelineState = timelineRef.current;
     // 暂停播放并跳转到点击时间点
     if (timelineState) {
@@ -487,6 +486,7 @@ export function Timeline() {
               // 拖拽移动 clip 结束后：将新 start/end 写回 project（否则预览/导出仍用旧时间）
               onActionMoveEnd={({ action, row, start, end }) => {
                 updateClipTiming(action.id, start, end, row.id);
+                setSelectedClipId(action.id);
               }}
               // 改变 clip 长度结束后：同样写回 start/end（例如裁剪时长）
               onActionResizeEnd={({ action, row, start, end }) => {

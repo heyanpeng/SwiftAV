@@ -18,6 +18,50 @@ import { createId } from "@swiftav/utils";
 import type { ProjectStore } from "./projectStore.types";
 
 /**
+ * 将 [start, end] 约束到与同轨道其他 clip 不重叠的位置，保持时长不变。
+ * 若发生重叠则吸附到相邻 clip 的边界（选移动量更小的一侧）。
+ */
+function constrainClipNoOverlap(
+  others: { id: string; start: number; end: number }[],
+  _clipId: string,
+  start: number,
+  end: number,
+): { start: number; end: number } {
+  const duration = end - start;
+  if (duration <= 0) {
+    return { start, end };
+  }
+  let newStart = start;
+  let newEnd = end;
+  const maxIter = 10;
+  for (let iter = 0; iter < maxIter; iter++) {
+    const overlapping = others.filter(
+      (o) => newStart < o.end && newEnd > o.start,
+    );
+    if (overlapping.length === 0) {
+      break;
+    }
+    const o = overlapping[0];
+    const snapLeftStart = o.start - duration;
+    const snapLeftEnd = o.start;
+    const snapRightStart = o.end;
+    const snapRightEnd = o.end + duration;
+    const distLeft = Math.abs(snapLeftStart - newStart);
+    const distRight = Math.abs(snapRightStart - newStart);
+    if (distLeft <= distRight) {
+      newStart = snapLeftStart;
+      newEnd = snapLeftEnd;
+    } else {
+      newStart = snapRightStart;
+      newEnd = snapRightEnd;
+    }
+  }
+  newStart = Math.max(0, newStart);
+  newEnd = newStart + duration;
+  return { start: newStart, end: newEnd };
+}
+
+/**
  * ProjectStore（zustand）实现
  * ===========================
  *
@@ -269,9 +313,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     const track = project.tracks.find((t) => t.id === clip.trackId);
     if (!track) return;
     const lastEnd =
-      track.clips.length === 0
-        ? 0
-        : Math.max(...track.clips.map((c) => c.end));
+      track.clips.length === 0 ? 0 : Math.max(...track.clips.map((c) => c.end));
     const duration = clip.end - clip.start;
     const newClip: Clip = {
       ...clip,
@@ -351,6 +393,9 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
    * - Timeline 上拖拽移动 clip（onActionMoveEnd）
    * - Timeline 上裁剪/拉伸 clip（onActionResizeEnd）
    *
+   * 同轨道不重叠：会先根据该轨道上其他 clip 的区间修正 start/end，再写回，
+   * 保证同一轨道内 clip 之间不重叠（吸附到相邻 clip 边界），并保持 clip 时长不变。
+   *
    * 为什么要写回：
    * - Preview 与导出都依赖 `project.tracks[].clips[].start/end` 判断可见性与渲染区间。
    */
@@ -365,10 +410,21 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       return;
     }
 
+    const effectiveTrackId =
+      trackId ?? findClipById(project, clipId)?.trackId;
+    const track = effectiveTrackId
+      ? project.tracks.find((t) => t.id === effectiveTrackId)
+      : undefined;
+    const others = track
+      ? track.clips.filter((c) => c.id !== clipId)
+      : [];
+    const { start: constrainedStart, end: constrainedEnd } =
+      constrainClipNoOverlap(others, clipId, start, end);
+
     // 用 @swiftav/project 的纯函数更新 clip；必要时同时更新归属轨道
     const nextProject = updateClip(project, clipId, {
-      start,
-      end,
+      start: constrainedStart,
+      end: constrainedEnd,
       ...(trackId ? { trackId } : {}),
     });
 
