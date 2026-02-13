@@ -43,6 +43,7 @@ export function Timeline() {
   const setIsPlayingGlobal = useProjectStore((s) => s.setIsPlaying);
   const setCurrentTimeGlobal = useProjectStore((s) => s.setCurrentTime);
   const updateClipTiming = useProjectStore((s) => s.updateClipTiming);
+  const duplicateClip = useProjectStore((s) => s.duplicateClip);
 
   // ================
   // ref & 本地 state
@@ -413,6 +414,11 @@ export function Timeline() {
         onZoomOut={handleZoomOut}
         onZoomIn={handleZoomIn}
         onFitToView={handleFitToView}
+        onCopyClip={
+          selectedClipId
+            ? () => duplicateClip(selectedClipId)
+            : undefined
+        }
       />
       <div className="app-editor-layout__timeline-content">
         {editorData.length === 0 ? (

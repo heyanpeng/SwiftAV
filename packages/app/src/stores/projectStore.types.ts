@@ -105,6 +105,12 @@ export interface ProjectStoreActions {
   setCanvasBackgroundColor(color: string): void;
 
   /**
+   * 复制指定 clip，新 clip 放在同一轨道的最后一个（紧接在当前轨道末尾之后）。
+   * 若 clipId 不存在或轨道不存在则 no-op。
+   */
+  duplicateClip(clipId: string): void;
+
+  /**
    * 更新时间轴上某个 clip 的播放区间（start/end，单位：秒）。
    *
    * 用途：

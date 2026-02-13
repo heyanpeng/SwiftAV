@@ -9,6 +9,7 @@ import {
   addClip,
   updateClip,
   getProjectDuration,
+  findClipById,
 } from "@swiftav/project";
 import { probeMedia } from "@swiftav/media";
 import { renderVideoWithCanvasLoop } from "@swiftav/renderer";
@@ -254,6 +255,34 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
    */
   setCanvasBackgroundColor(color: string) {
     set({ canvasBackgroundColor: color });
+  },
+
+  /**
+   * 复制指定 clip，新 clip 放在同一轨道最后一个 clip 之后。
+   */
+  duplicateClip(clipId: string) {
+    const project = get().project;
+    if (!project) return;
+    const clip = findClipById(project, clipId as Clip["id"]);
+    if (!clip) return;
+    const track = project.tracks.find((t) => t.id === clip.trackId);
+    if (!track) return;
+    const lastEnd =
+      track.clips.length === 0
+        ? 0
+        : Math.max(...track.clips.map((c) => c.end));
+    const duration = clip.end - clip.start;
+    const newClip: Clip = {
+      ...clip,
+      id: createId("clip") as Clip["id"],
+      start: lastEnd,
+      end: lastEnd + duration,
+    };
+    const nextProject = addClip(project, newClip);
+    set({
+      project: nextProject,
+      duration: getProjectDuration(nextProject),
+    });
   },
 
   /**
