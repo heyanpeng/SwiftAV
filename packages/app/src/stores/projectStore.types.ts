@@ -135,6 +135,12 @@ export interface ProjectStoreActions {
   updateClipTiming(clipId: string, start: number, end: number, trackId?: string): void;
 
   /**
+   * 按拖拽后的新顺序更新轨道 order（时间轴行拖拽结束时调用）。
+   * @param orderedTrackIds 从顶到底的轨道 id 顺序
+   */
+  reorderTracks(orderedTrackIds: string[]): void;
+
+  /**
    * 将当前工程导出为 mp4，并返回生成的视频 Blob。
    *
    * - 返回 `null` 表示导出条件不满足（无工程/无资源/无主视频等）。

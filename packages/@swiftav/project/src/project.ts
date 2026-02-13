@@ -230,6 +230,35 @@ export function findClipById(project: Project, clipId: ClipId): Clip | undefined
 }
 
 /**
+ * 按拖拽后的新顺序更新轨道 order。
+ * @param project 当前工程
+ * @param orderedTrackIds 从顶到底的轨道 id 顺序（index 0 = 最上方轨道）
+ * @returns 更新 order 后的新工程
+ */
+export function reorderTracks(
+  project: Project,
+  orderedTrackIds: TrackId[],
+): Project {
+  const idToNewOrder = new Map<TrackId, number>();
+  const topOrder = orderedTrackIds.length - 1;
+  for (let i = 0; i < orderedTrackIds.length; i++) {
+    idToNewOrder.set(orderedTrackIds[i], topOrder - i);
+  }
+  const tracks = project.tracks.map((track) => {
+    const order = idToNewOrder.get(track.id);
+    if (order === undefined) {
+      return track;
+    }
+    return { ...track, order };
+  });
+  return {
+    ...project,
+    tracks,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+/**
  * 计算工程总时长：所有轨道上 clip.end 的最大值。
  */
 export function getProjectDuration(project: Project): number {

@@ -11,6 +11,7 @@ import {
   getProjectDuration,
   findClipById,
   removeClip,
+  reorderTracks as reorderTracksProject,
 } from "@swiftav/project";
 import { probeMedia } from "@swiftav/media";
 import { renderVideoWithCanvasLoop } from "@swiftav/renderer";
@@ -438,6 +439,15 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       duration,
       currentTime,
     });
+  },
+
+  reorderTracks(orderedTrackIds: string[]) {
+    const project = get().project;
+    if (!project || orderedTrackIds.length === 0) {
+      return;
+    }
+    const nextProject = reorderTracksProject(project, orderedTrackIds);
+    set({ project: nextProject });
   },
 
   /**

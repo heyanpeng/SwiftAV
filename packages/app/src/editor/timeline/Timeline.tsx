@@ -47,6 +47,7 @@ export function Timeline() {
   const setIsPlayingGlobal = useProjectStore((s) => s.setIsPlaying);
   const setCurrentTimeGlobal = useProjectStore((s) => s.setCurrentTime);
   const updateClipTiming = useProjectStore((s) => s.updateClipTiming);
+  const reorderTracks = useProjectStore((s) => s.reorderTracks);
   const duplicateClip = useProjectStore((s) => s.duplicateClip);
   const cutClip = useProjectStore((s) => s.cutClip);
   const deleteClip = useProjectStore((s) => s.deleteClip);
@@ -461,7 +462,7 @@ export function Timeline() {
               effects={effects as any}
               // 轨道行高（包含轨道之间的 gap）
               rowHeight={TIMELINE_ROW_HEIGHT_PX}
-              rowPrefixTopOffset={41}
+              rowPrefixTopOffset={42}
               // 每条轨道左侧固定音量按钮，在轨道「内容区」内垂直居中，与 clip 缩略图对齐
               renderRowPrefix={() => (
                 <div
@@ -521,6 +522,12 @@ export function Timeline() {
               onClickTimeArea={handleClickTimeArea}
               // 仅点击 clip 时：切换选中态（库会根据 action.selected 加 class）
               onClickActionOnly={handleClickActionOnly}
+              // 启用轨道行拖拽，拖拽结束后按新顺序写回 project.tracks 的 order
+              enableRowDrag={true}
+              onRowDragEnd={({ editorData: nextEditorData }) => {
+                const orderedTrackIds = nextEditorData.map((row) => row.id);
+                reorderTracks(orderedTrackIds);
+              }}
             />
           </div>
         )}
