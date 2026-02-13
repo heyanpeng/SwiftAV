@@ -33,6 +33,63 @@
   --swiftav-timeline-track-gap: 8px;
 }
 
+/* 轨道前置列：音量按钮列，与时间轴同深色背景 */
+.timeline-editor .swiftav-timeline-row-prefix-list {
+  background-color: #202024;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* 前置列顶部留白，与时间轴刻度行等高、同色，使第一条轨道按钮与轨道对齐 */
+.timeline-editor .swiftav-timeline-row-prefix-spacer {
+  background-color: #202024;
+  width: 100%;
+}
+
+/* 与轨道行一致：内容区 + 底部 gap；按钮在「内容区」内居中，与轨道 clip 对齐 */
+.timeline-editor .swiftav-timeline-row-prefix-cell {
+  padding-bottom: var(--swiftav-timeline-track-gap);
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+/* 音量按钮容器：高度与轨道内容区一致，按钮在此区域内水平垂直居中 */
+.timeline-track-volume-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 每条轨道左侧的音量按钮：白色喇叭图标，在列内水平居中 */
+.timeline-track-volume-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.timeline-track-volume-btn:hover {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.timeline-track-volume-btn:focus-visible {
+  outline: 2px solid #feca28;
+  outline-offset: 2px;
+}
+
 /* 为每条轨道行留出底部 gap，同时让 grid 背景不绘制到 gap 区域 */
 .timeline-editor .timeline-editor-edit-row {
   padding-bottom: var(--swiftav-timeline-track-gap);

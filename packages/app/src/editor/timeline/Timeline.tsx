@@ -2,12 +2,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { TimelineState } from "@swiftav/timeline";
 import { ReactTimeline } from "@swiftav/timeline";
 import type { Clip } from "@swiftav/project";
+import { Volume2 } from "lucide-react";
 import { PlaybackControls } from "./playbackControls/PlaybackControls";
 import { useProjectStore } from "@/stores";
 import { formatTimeLabel } from "@swiftav/utils";
 import { playbackClock } from "@/editor/preview/playbackClock";
 import { useVideoThumbnails, getThumbCellsForClip } from "./useVideoThumbnails";
 import "./Timeline.css";
+
+/** 轨道前置列宽度（音量按钮列），与 @swiftav/timeline 的 rowPrefixWidth 一致 */
+const TIMELINE_ROW_PREFIX_WIDTH_PX = 48;
 
 /**
  * 轨道之间的垂直间距（px）。
@@ -415,19 +419,16 @@ export function Timeline() {
         onZoomOut={handleZoomOut}
         onZoomIn={handleZoomIn}
         onFitToView={handleFitToView}
-        onCutClip={
-          (() => {
-            if (!selectedClipId) return undefined;
-            const clip = clipById[selectedClipId];
-            if (!clip) return undefined;
-            if (currentTime <= clip.start || currentTime >= clip.end) return undefined;
-            return () => cutClip(selectedClipId);
-          })()
-        }
+        onCutClip={(() => {
+          if (!selectedClipId) return undefined;
+          const clip = clipById[selectedClipId];
+          if (!clip) return undefined;
+          if (currentTime <= clip.start || currentTime >= clip.end)
+            return undefined;
+          return () => cutClip(selectedClipId);
+        })()}
         onCopyClip={
-          selectedClipId
-            ? () => duplicateClip(selectedClipId)
-            : undefined
+          selectedClipId ? () => duplicateClip(selectedClipId) : undefined
         }
         onDeleteClip={
           selectedClipId
@@ -460,6 +461,24 @@ export function Timeline() {
               effects={effects as any}
               // 轨道行高（包含轨道之间的 gap）
               rowHeight={TIMELINE_ROW_HEIGHT_PX}
+              rowPrefixTopOffset={41}
+              // 每条轨道左侧固定音量按钮，在轨道「内容区」内垂直居中，与 clip 缩略图对齐
+              renderRowPrefix={() => (
+                <div
+                  className="timeline-track-volume-cell"
+                  style={{ height: TIMELINE_TRACK_CONTENT_HEIGHT_PX }}
+                >
+                  <button
+                    type="button"
+                    className="timeline-track-volume-btn"
+                    aria-label="轨道音量"
+                    title="轨道音量"
+                  >
+                    <Volume2 size={20} />
+                  </button>
+                </div>
+              )}
+              rowPrefixWidth={TIMELINE_ROW_PREFIX_WIDTH_PX}
               // 主刻度（每段的 "时间长度"，单位：秒），此处为1表示每格1秒
               scale={1}
               // 每主刻度的细分数，将1秒细分为10份用于显示子网格线
