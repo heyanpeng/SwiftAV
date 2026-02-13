@@ -31,6 +31,10 @@ export function Header() {
   const project = useProjectStore((s) => s.project);
   const loading = useProjectStore((s) => s.loading);
   const exportToMp4 = useProjectStore((s) => s.exportToMp4);
+  const canUndo = useProjectStore((s) => s.historyPast.length > 0);
+  const canRedo = useProjectStore((s) => s.historyFuture.length > 0);
+  const undo = useProjectStore((s) => s.undo);
+  const redo = useProjectStore((s) => s.redo);
   const [exporting, setExporting] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>("480p");
@@ -78,13 +82,23 @@ export function Header() {
         />
       </div>
       <div className="app-editor-layout__header-right">
-        <Tooltip content="Undo">
-          <button className="app-editor-layout__header-btn" disabled>
+        <Tooltip content="撤销">
+          <button
+            className="app-editor-layout__header-btn"
+            disabled={!canUndo}
+            onClick={undo}
+            type="button"
+          >
             <Undo size={16} />
           </button>
         </Tooltip>
-        <Tooltip content="Redo">
-          <button className="app-editor-layout__header-btn" disabled>
+        <Tooltip content="重做">
+          <button
+            className="app-editor-layout__header-btn"
+            disabled={!canRedo}
+            onClick={redo}
+            type="button"
+          >
             <Redo size={16} />
           </button>
         </Tooltip>

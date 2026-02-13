@@ -76,6 +76,24 @@ importers:
         specifier: ^8.46.4
         version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
 
+  packages/@swiftav/history:
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.39.1
+        version: 9.39.2
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.10.9
+      eslint:
+        specifier: ^9.39.1
+        version: 9.39.2
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.46.4
+        version: 8.53.1(eslint@9.39.2)(typescript@5.9.3)
+
   packages/@swiftav/media:
     dependencies:
       mediabunny:
@@ -241,6 +259,9 @@ importers:
       '@swiftav/canvas':
         specifier: workspace:*
         version: link:../@swiftav/canvas
+      '@swiftav/history':
+        specifier: workspace:*
+        version: link:../@swiftav/history
       '@swiftav/media':
         specifier: workspace:*
         version: link:../@swiftav/media

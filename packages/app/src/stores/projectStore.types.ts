@@ -1,4 +1,5 @@
 import type { Project } from "@swiftav/project";
+import type { Command } from "@swiftav/history";
 
 /**
  * ProjectStore：工程编辑器的核心全局状态（zustand）。
@@ -66,6 +67,16 @@ export interface ProjectStoreState {
    * - 仅用于预览画布的背景填充，不参与导出逻辑（若需导出背景色，应写入工程数据结构）。
    */
   canvasBackgroundColor: string;
+
+  /**
+   * 撤销栈（命令模式）。不直接修改，仅通过 undo/redo 与各 action 内部 push 使用。
+   */
+  historyPast: Command[];
+
+  /**
+   * 重做栈。撤销后再次编辑会清空。
+   */
+  historyFuture: Command[];
 }
 
 /**
@@ -144,6 +155,19 @@ export interface ProjectStoreActions {
    * 切换指定轨道的静音状态。
    */
   toggleTrackMuted(trackId: string): void;
+
+  /**
+   * 撤销上一步编辑（仅影响 project 相关操作）。
+   */
+  undo(): void;
+
+  /**
+   * 重做最近一次撤销。
+   */
+  redo(): void;
+
+  /** 内部使用：将一条命令压入撤销栈，并清空重做栈。 */
+  pushHistory(cmd: Command): void;
 
   /**
    * 将当前工程导出为 mp4，并返回生成的视频 Blob。

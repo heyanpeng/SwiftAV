@@ -17,6 +17,15 @@ import {
 import { probeMedia } from "@swiftav/media";
 import { renderVideoWithCanvasLoop } from "@swiftav/renderer";
 import { createId } from "@swiftav/utils";
+import { DEFAULT_MAX_HISTORY } from "@swiftav/history";
+import {
+  createUpdateClipTimingCommand,
+  createDuplicateClipCommand,
+  createDeleteClipCommand,
+  createCutClipCommand,
+  createReorderTracksCommand,
+  createToggleTrackMutedCommand,
+} from "./projectStoreCommands";
 import type { ProjectStore } from "./projectStore.types";
 
 /**
@@ -95,6 +104,53 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   videoUrl: null,
   // 预览区域画布的背景色（CSS 颜色字符串）
   canvasBackgroundColor: "#000000",
+  // 已完成的命令历史（用于撤销）
+  historyPast: [],
+  // 可重做的命令历史（用于重做）
+  historyFuture: [],
+
+  /**
+   * 添加一条新的命令到历史，并清空可重做历史
+   * @param cmd 可撤销/重做的命令对象（必须实现 execute/undo）
+   */
+  pushHistory(cmd: { execute: () => void; undo: () => void }) {
+    const past = get().historyPast;
+    // 限制历史长度为 DEFAULT_MAX_HISTORY
+    const next = [...past, cmd].slice(-DEFAULT_MAX_HISTORY);
+    set({ historyPast: next, historyFuture: [] });
+  },
+
+  /**
+   * 撤销上一条命令（undo），并将其移动到可重做历史
+   */
+  undo() {
+    const past = get().historyPast;
+    if (past.length === 0) {
+      return;
+    }
+    const cmd = past[past.length - 1];
+    cmd.undo();
+    set({
+      historyPast: past.slice(0, -1),
+      historyFuture: [...get().historyFuture, cmd],
+    });
+  },
+
+  /**
+   * 重做上一条撤销的命令（redo）
+   */
+  redo() {
+    const future = get().historyFuture;
+    if (future.length === 0) {
+      return;
+    }
+    const cmd = future[future.length - 1];
+    cmd.execute();
+    set({
+      historyPast: [...get().historyPast, cmd],
+      historyFuture: future.slice(0, -1),
+    });
+  },
 
   /**
    * 导入本地视频文件并写入工程。
@@ -328,6 +384,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       project: nextProject,
       duration: getProjectDuration(nextProject),
     });
+    get().pushHistory(createDuplicateClipCommand(get, set, newClip));
   },
 
   /**
@@ -370,6 +427,9 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       project: nextProject,
       duration: getProjectDuration(nextProject),
     });
+    get().pushHistory(
+      createCutClipCommand(get, set, clip, leftClip, rightClip),
+    );
   },
 
   /**
@@ -378,6 +438,8 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   deleteClip(clipId: string) {
     const project = get().project;
     if (!project) return;
+    const clip = findClipById(project, clipId as Clip["id"]);
+    if (!clip) return;
     const nextProject = removeClip(project, clipId as Clip["id"]);
     const duration = getProjectDuration(nextProject);
     const currentTime = Math.min(get().currentTime, duration);
@@ -386,6 +448,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       duration,
       currentTime,
     });
+    get().pushHistory(createDeleteClipCommand(get, set, clip, currentTime));
   },
 
   /**
@@ -412,14 +475,16 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       return;
     }
 
-    const effectiveTrackId =
-      trackId ?? findClipById(project, clipId)?.trackId;
+    const clipBefore = findClipById(project, clipId as Clip["id"]);
+    const prevStart = clipBefore?.start ?? start;
+    const prevEnd = clipBefore?.end ?? end;
+    const prevTrackId = clipBefore?.trackId;
+
+    const effectiveTrackId = trackId ?? findClipById(project, clipId)?.trackId;
     const track = effectiveTrackId
       ? project.tracks.find((t) => t.id === effectiveTrackId)
       : undefined;
-    const others = track
-      ? track.clips.filter((c) => c.id !== clipId)
-      : [];
+    const others = track ? track.clips.filter((c) => c.id !== clipId) : [];
     const { start: constrainedStart, end: constrainedEnd } =
       constrainClipNoOverlap(others, clipId, start, end);
 
@@ -440,6 +505,19 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       duration,
       currentTime,
     });
+    get().pushHistory(
+      createUpdateClipTimingCommand(
+        get,
+        set,
+        clipId,
+        prevStart,
+        prevEnd,
+        prevTrackId,
+        constrainedStart,
+        constrainedEnd,
+        effectiveTrackId,
+      ),
+    );
   },
 
   reorderTracks(orderedTrackIds: string[]) {
@@ -447,8 +525,12 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     if (!project || orderedTrackIds.length === 0) {
       return;
     }
+    const previousOrder = project.tracks.map((t) => t.id);
     const nextProject = reorderTracksProject(project, orderedTrackIds);
     set({ project: nextProject });
+    get().pushHistory(
+      createReorderTracksCommand(get, set, previousOrder, orderedTrackIds),
+    );
   },
 
   toggleTrackMuted(trackId: string) {
@@ -460,8 +542,18 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     if (!track) {
       return;
     }
+    const previousMuted = track.muted ?? false;
     const nextProject = setTrackMuted(project, trackId, !track.muted);
     set({ project: nextProject });
+    get().pushHistory(
+      createToggleTrackMutedCommand(
+        get,
+        set,
+        trackId,
+        previousMuted,
+        !track.muted,
+      ),
+    );
   },
 
   /**
