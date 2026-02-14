@@ -149,6 +149,28 @@
   background-color: rgba(255, 255, 255, 0.04);
 }
 
+/**
+ * 文本 clip：显示文本内容，靠左对齐
+ */
+.swiftav-timeline-text-clip {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.swiftav-timeline-text-clip__label {
+  text-align: left;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .timeline-editor-action {
   border-radius: 4px;
   overflow: hidden;

@@ -176,14 +176,28 @@ export function Timeline() {
   );
 
   /**
-   * 自定义 action 渲染：为视频 clip 显示缩略图网格，依赖 useVideoThumbnails 与 getThumbCellsForClip。
+   * 自定义 action 渲染：视频 clip 显示缩略图网格；文本 clip 显示文本内容（靠左）。
    */
   const getActionRender = (action: any) => {
     if (!project) {
       return undefined;
     }
     const clip: Clip | undefined = clipById[action.id];
-    if (!clip || clip.kind !== "video") {
+    if (!clip) {
+      return undefined;
+    }
+    if (clip.kind === "text") {
+      const asset = project.assets.find((a) => a.id === clip.assetId);
+      const params = (clip.params ?? {}) as { text?: string };
+      const text =
+        params.text ?? asset?.textMeta?.initialText ?? "标题文字";
+      return (
+        <div className="swiftav-timeline-text-clip" data-swiftav-clip>
+          <span className="swiftav-timeline-text-clip__label">{text}</span>
+        </div>
+      );
+    }
+    if (clip.kind !== "video") {
       return undefined;
     }
     const assetThumb = videoThumbnails[clip.assetId];
