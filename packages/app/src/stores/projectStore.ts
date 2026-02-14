@@ -192,10 +192,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
    * - 会创建 blob URL 并写入 asset.source / store.videoUrl。
    * - 会切换 `loading`，并在落盘前重置 `isPlaying=false`。
    */
-  async loadVideoFile(
-    file: File,
-    options?: { skipHistory?: boolean },
-  ) {
+  async loadVideoFile(file: File, options?: { skipHistory?: boolean }) {
     const prevProject = get().project;
     const prevVideoUrl = get().videoUrl;
     const prevDuration = get().duration;
@@ -728,7 +725,15 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
    */
   updateClipTransform(
     clipId: string,
-    transform: { x?: number; y?: number; scaleX?: number; scaleY?: number; rotation?: number; width?: number; height?: number },
+    transform: {
+      x?: number;
+      y?: number;
+      scaleX?: number;
+      scaleY?: number;
+      rotation?: number;
+      width?: number;
+      height?: number;
+    },
   ) {
     const project = get().project;
     if (!project) return;
@@ -753,7 +758,31 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
     // 创建历史记录命令
     get().pushHistory(
-      createUpdateClipTransformCommand(get, set, clipId, prevTransform, newTransform),
+      createUpdateClipTransformCommand(
+        get,
+        set,
+        clipId,
+        prevTransform,
+        newTransform,
+      ),
     );
   },
 }));
+
+// 当选中的 clip 已不在 project 中，或当前时间下不可见时，自动清除选中态
+useProjectStore.subscribe(() => {
+  const { selectedClipId, project, currentTime } = useProjectStore.getState();
+  if (!selectedClipId || !project) return;
+
+  const clip = findClipById(project, selectedClipId as Clip["id"]);
+  if (!clip) {
+    // 已被删除、裁剪、undo 等
+    useProjectStore.setState({ selectedClipId: null });
+    return;
+  }
+
+  // 当前播放头下 clip 不可见（时间轴外），画布已移除该节点，需清除选中框
+  if (currentTime < clip.start || currentTime >= clip.end) {
+    useProjectStore.setState({ selectedClipId: null });
+  }
+});

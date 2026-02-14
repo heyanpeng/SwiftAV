@@ -9,10 +9,10 @@ export const DEFAULT_FILL = "#ffffff";
 
 // 选中框样式
 export const SELECTION_STYLES = {
-  borderStroke: '#00d4ff',
+  borderStroke: "#feca28",
   borderStrokeWidth: 2,
-  anchorFill: '#ffffff',
-  anchorStroke: '#00d4ff',
+  anchorFill: "#ffffff",
+  anchorStroke: "#feca28",
   anchorSize: 10,
   anchorCornerRadius: 2,
   rotateAnchorOffset: 20,
