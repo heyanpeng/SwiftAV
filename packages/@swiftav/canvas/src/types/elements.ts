@@ -29,6 +29,10 @@ export interface TextOptions {
   x?: number;
   /** 文本 Y 坐标（可选） */
   y?: number;
+  /** 定位锚点 X 偏移（Konva offsetX，用于居中：设为 width/2） */
+  offsetX?: number;
+  /** 定位锚点 Y 偏移（Konva offsetY，用于居中：设为 height/2） */
+  offsetY?: number;
   /** 字号（像素，默认值见实现） */
   fontSize?: number;
   /** 字体名称（可选，默认见实现） */

@@ -620,6 +620,10 @@ export const useProjectStore = create<ProjectStore>()(
 
       const clipId = createId("clip");
       const defaultDuration = 5;
+      const fontSize = 96;
+      const lineHeight = 1;
+      const estimatedTextWidth = text.length * fontSize;
+      const estimatedTextHeight = fontSize * lineHeight;
       const clip: Clip = {
         id: clipId,
         trackId,
@@ -628,14 +632,16 @@ export const useProjectStore = create<ProjectStore>()(
         start: currentTime,
         end: currentTime + defaultDuration,
         transform: {
-          x: (project.width - 200) / 2,
-          y: (project.height - 40) / 2,
+          x: project.width / 2,
+          y: project.height / 2,
+          anchorX: estimatedTextWidth / 2,
+          anchorY: estimatedTextHeight / 2,
         },
         params: {
           text,
-          fontSize: 96,
+          fontSize,
           fill: "#ffffff",
-          lineHeight: 1,
+          lineHeight,
           letterSpacing: 1,
         },
       };

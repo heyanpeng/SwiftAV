@@ -28,6 +28,8 @@ export function usePreviewTextSync(
       text: string;
       x: number;
       y: number;
+      offsetX?: number;
+      offsetY?: number;
       fontSize: number;
       fill: string;
       fontFamily?: string;
@@ -80,21 +82,26 @@ export function usePreviewTextSync(
         const stageSize = editor.getStage().size();
         const scaleX = stageSize.width / project.width;
         const scaleY = stageSize.height / project.height;
+        const scale = Math.min(scaleX, scaleY);
         const projX = clip.transform?.x ?? 0;
         const projY = clip.transform?.y ?? 0;
+        const anchorX = clip.transform?.anchorX ?? 0;
+        const anchorY = clip.transform?.anchorY ?? 0;
 
         visibleTextClips.push({
           id: clip.id,
           text: params.text ?? asset?.textMeta?.initialText ?? "",
           x: projX * scaleX,
           y: projY * scaleY,
-          fontSize: (params.fontSize ?? 32) * Math.min(scaleX, scaleY),
+          offsetX: anchorX * scale,
+          offsetY: anchorY * scale,
+          fontSize: (params.fontSize ?? 32) * scale,
           fill: params.fill ?? "#ffffff",
           fontFamily: params.fontFamily,
           fontStyle: params.fontStyle ?? "normal",
           textDecoration: params.textDecoration ?? "",
           lineHeight: params.lineHeight ?? 1,
-          letterSpacing: (params.letterSpacing ?? 1) * Math.min(scaleX, scaleY),
+          letterSpacing: (params.letterSpacing ?? 1) * scale,
           align: params.align ?? "left",
           opacity: params.opacity ?? 1,
           scaleX: clip.transform?.scaleX ?? 1,
@@ -121,6 +128,8 @@ export function usePreviewTextSync(
           text: clip.text,
           x: clip.x,
           y: clip.y,
+          offsetX: clip.offsetX,
+          offsetY: clip.offsetY,
           fontSize: clip.fontSize,
           fill: clip.fill,
           fontFamily: clip.fontFamily,
@@ -141,6 +150,8 @@ export function usePreviewTextSync(
           text: clip.text,
           x: clip.x,
           y: clip.y,
+          offsetX: clip.offsetX,
+          offsetY: clip.offsetY,
           fontSize: clip.fontSize,
           fill: clip.fill,
           fontFamily: clip.fontFamily,

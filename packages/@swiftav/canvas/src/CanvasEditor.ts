@@ -175,6 +175,8 @@ export class CanvasEditor {
     const textNode = new Konva.Text({
       x: options.x ?? 0,
       y: options.y ?? 0,
+      offsetX: options.offsetX ?? 0,
+      offsetY: options.offsetY ?? 0,
       text: options.text,
       fontSize: options.fontSize ?? DEFAULT_FONT_SIZE,
       fontFamily: options.fontFamily ?? DEFAULT_FONT_FAMILY,
@@ -205,6 +207,8 @@ export class CanvasEditor {
     if (patch.text !== undefined) node.text(patch.text);
     if (patch.x !== undefined) node.x(patch.x);
     if (patch.y !== undefined) node.y(patch.y);
+    if (patch.offsetX !== undefined) node.offsetX(patch.offsetX);
+    if (patch.offsetY !== undefined) node.offsetY(patch.offsetY);
     if (patch.fontSize !== undefined) node.fontSize(patch.fontSize);
     if (patch.fontFamily !== undefined) node.fontFamily(patch.fontFamily);
     if (patch.fontStyle !== undefined) node.fontStyle(patch.fontStyle);
