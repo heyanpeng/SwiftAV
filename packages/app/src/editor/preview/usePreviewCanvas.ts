@@ -22,6 +22,13 @@ export function usePreviewCanvas(
 
   // 项目的画布背景色（响应全局 store 的变动）
   const canvasBackgroundColor = useProjectStore((s) => s.canvasBackgroundColor);
+  // 画布宽高比：有 project 用 project，无 project 用 preferredCanvasSize
+  const project = useProjectStore((s) => s.project);
+  const preferredCanvasSize = useProjectStore((s) => s.preferredCanvasSize);
+  const canvasAspect =
+    project != null
+      ? project.width / project.height
+      : preferredCanvasSize.width / preferredCanvasSize.height;
 
   useEffect(() => {
     // 若无容器节点，直接跳过
@@ -29,9 +36,9 @@ export function usePreviewCanvas(
       return;
     }
 
-    // 获取容器宽高，后续据此适配 16:9 画布
+    // 获取容器宽高，据此适配画布比例（来自 project 或 preferredCanvasSize）
     const rect = containerRef.current.getBoundingClientRect();
-    const targetAspect = 16 / 9; // 画布固定比例
+    const targetAspect = canvasAspect;
     let width = rect.width;
     let height = rect.height;
 
@@ -63,15 +70,19 @@ export function usePreviewCanvas(
     editorRef.current = editor;
 
     /**
-     * 处理窗口 resize：自动重新计算并调整画布尺寸（保持 16:9）
-     * 仅在 CanvasEditor 已初始化时生效
+     * 处理窗口 resize：按当前画布比例重新计算尺寸
      */
     const handleResize = () => {
-      if (!containerRef.current || !editorRef.current) {
-        return;
-      }
+      if (!containerRef.current || !editorRef.current) return;
+
+      const state = useProjectStore.getState();
+      const aspect =
+        state.project != null
+          ? state.project.width / state.project.height
+          : state.preferredCanvasSize.width / state.preferredCanvasSize.height;
+
       const r = containerRef.current.getBoundingClientRect();
-      const targetAspect = 16 / 9;
+      const targetAspect = aspect;
       let newWidth = r.width;
       let newHeight = r.height;
 
@@ -105,8 +116,33 @@ export function usePreviewCanvas(
         rafIdRef.current = null;
       }
     };
-    // 仅首次挂载时运行/卸载时 cleanup，依赖 capture 在闭包
+    // 仅首次挂载时运行/卸载时 cleanup
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- 故意只在挂载时运行
   }, []);
+
+  // 当画布比例变化时（用户选择新尺寸），重新计算并 resize
+  useEffect(() => {
+    const editor = editorRef.current;
+    const container = containerRef.current;
+    if (!editor || !container) return;
+
+    const r = container.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+
+    const containerAspect = r.width / r.height;
+    let newWidth: number;
+    let newHeight: number;
+
+    if (containerAspect > canvasAspect) {
+      newHeight = r.height;
+      newWidth = r.height * canvasAspect;
+    } else {
+      newWidth = r.width;
+      newHeight = r.width / canvasAspect;
+    }
+
+    editor.resize(newWidth, newHeight);
+  }, [canvasAspect]);
 
   /**
    * 实时同步画布背景色

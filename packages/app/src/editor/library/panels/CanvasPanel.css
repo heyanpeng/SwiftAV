@@ -34,19 +34,30 @@
 
 .canvas-panel__size-selector {
   position: relative;
+  z-index: 1;
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  background: hsla(0, 0%, 100%, 0.05);
+  background: hsla(0, 0%, 100%, 0.05) !important;
   border: 1px solid hsla(0, 0%, 100%, 0.1);
   border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.2s;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  pointer-events: auto;
 }
 
-.canvas-panel__size-selector:hover {
+.canvas-panel__size-selector:hover:not(:disabled) {
   background: hsla(0, 0%, 100%, 0.08);
+}
+
+.canvas-panel__size-selector:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .canvas-panel__monitor-icon {
@@ -77,6 +88,8 @@
 }
 
 .canvas-panel__dropdown-menu {
+  display: flex;
+  flex-direction: column;
   position: absolute;
   top: 100%;
   left: 0;
@@ -110,6 +123,7 @@
 }
 
 .canvas-panel__dropdown-item {
+  width: 100%;
   padding: 10px 12px;
   font-size: 14px;
   color: #ffffff;
@@ -118,6 +132,10 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font: inherit;
 }
 
 .canvas-panel__dropdown-item > span {

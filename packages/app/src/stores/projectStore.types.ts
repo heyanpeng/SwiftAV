@@ -69,6 +69,20 @@ export interface ProjectStoreState {
   canvasBackgroundColor: string;
 
   /**
+   * 偏好画布尺寸（无工程时用户选择的宽高）。
+   * - 导入视频创建工程时优先使用此尺寸；
+   * - 有工程时由 project.width/height 决定，与此保持一致。
+   */
+  preferredCanvasSize: { width: number; height: number };
+
+  /**
+   * 用户显式选中的画布预设 value（如 "wechat-video-16:9"）。
+   * 比例相同时（如抖音横屏 16:9 与视频号 16:9）用于区分并正确显示选中项。
+   * null 时由 preferredCanvasSize / project 反推。
+   */
+  preferredCanvasPreset: string | null;
+
+  /**
    * 当前选中的 clip id（画布选中编辑用）。
    *
    * - `null`：没有选中任何 clip。
@@ -126,6 +140,14 @@ export interface ProjectStoreActions {
    * 设置画布背景颜色（预览用）。
    */
   setCanvasBackgroundColor(color: string): void;
+
+  /**
+   * 设置画布尺寸（width/height）。
+   * - 有工程时：更新 project 并支持撤销；
+   * - 无工程时：更新 preferredCanvasSize，导入视频时将使用此尺寸。
+   * @param preset 预设 value（如 "wechat-video-16:9"），用于比例相同时正确显示选中项
+   */
+  setCanvasSize(width: number, height: number, preset?: string): void;
 
   /**
    * 复制指定 clip，新 clip 放在同一轨道的最后一个（紧接在当前轨道末尾之后）。
