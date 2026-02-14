@@ -75,6 +75,11 @@
   cursor: pointer;
 }
 
+/* 轨道拖拽手柄：不透明度设为 1，保证可见 */
+.timeline-editor .timeline-editor-edit-row-drag-handle {
+  opacity: 1;
+}
+
 /* 为每条轨道行留出底部 gap，同时让 grid 背景不绘制到 gap 区域 */
 .timeline-editor .timeline-editor-edit-row {
   padding-bottom: var(--swiftav-timeline-track-gap);
