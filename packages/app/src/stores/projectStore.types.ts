@@ -190,6 +190,16 @@ export interface ProjectStoreActions {
   updateClipParams(clipId: string, params: Record<string, unknown>): void;
 
   /**
+   * 瞬时更新 clip params，不写入历史。用于颜色/不透明度拖动时的实时预览。
+   */
+  updateClipParamsTransient(clipId: string, params: Record<string, unknown>): void;
+
+  /**
+   * 将已通过 transient 更新的 params 提交到历史。在拖动/选择结束时调用。
+   */
+  commitClipParamsChange(clipId: string, prevParams: Record<string, unknown>): void;
+
+  /**
    * 更新时间轴上某个 clip 的播放区间（start/end，单位：秒）。
    *
    * 用途：

@@ -77,11 +77,105 @@
   margin-top: 8px;
 }
 
+/* 不透明度 Popover：滑动条 + 数字输入 */
+.selection-toolbar__opacity-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.selection-toolbar__opacity-value {
+  font-size: 13px;
+  min-width: 2em;
+}
+
+.selection-toolbar__opacity-popover {
+  min-width: 200px;
+}
+
+.selection-toolbar__opacity-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Radix Slider：https://www.radix-ui.com/primitives/docs/components/slider */
+.selection-toolbar__opacity-slider {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  height: 20px;
+}
+
+.selection-toolbar__opacity-slider-track {
+  position: relative;
+  flex-grow: 1;
+  height: 6px;
+  background: var(--gray-6, #4a4a4a);
+  border-radius: 3px;
+}
+
+.selection-toolbar__opacity-slider-range {
+  position: absolute;
+  height: 100%;
+  background: var(--accent-9, #3b82f6);
+  border-radius: 3px;
+}
+
+.selection-toolbar__opacity-slider-thumb {
+  display: block;
+  width: 14px;
+  height: 14px;
+  background: var(--color-text, #f1f1f1);
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  cursor: grab;
+}
+
+.selection-toolbar__opacity-slider-thumb:focus {
+  outline: 2px solid var(--accent-9, #3b82f6);
+  outline-offset: 2px;
+}
+
+.selection-toolbar__opacity-input {
+  width: 44px;
+  padding: 4px 6px;
+  font-size: 13px;
+  color: #1a1a1a;
+  background: #e8e8e8;
+  border: 1px solid var(--gray-6, #4a4a4a);
+  border-radius: 4px;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+
+.selection-toolbar__opacity-input::-webkit-outer-spin-button,
+.selection-toolbar__opacity-input::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.selection-toolbar__opacity-input:focus {
+  outline: 2px solid var(--accent-9, #3b82f6);
+  outline-offset: 1px;
+}
+
 /* Select 触发按钮 */
 .selection-toolbar__select-trigger {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+
+.selection-toolbar__font-name {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
 }
 
 .selection-toolbar__font-size {
@@ -116,6 +210,11 @@
 
 .selection-toolbar__dropdown-item[data-state="checked"] {
   color: var(--accent-9, #3b82f6);
+}
+
+.selection-toolbar__dropdown-item--with-icon .selection-toolbar__dropdown-icon {
+  margin-right: 8px;
+  flex-shrink: 0;
 }
 
 /* 加粗/斜体/删除线 Toggle 组：按钮间留间隔 */

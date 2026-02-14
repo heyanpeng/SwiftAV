@@ -37,8 +37,16 @@ export interface TextOptions {
   fontStyle?: string;
   /** 文本装饰：line-through | underline | ""（Konva textDecoration） */
   textDecoration?: string;
+  /** 行高倍数（Konva lineHeight，默认 1） */
+  lineHeight?: number;
+  /** 字间距像素（Konva letterSpacing） */
+  letterSpacing?: number;
+  /** 水平对齐：left | center | right | justify（Konva align） */
+  align?: string;
   /** 字体颜色（CSS 颜色字符串，默认见实现） */
   fill?: string;
+  /** 不透明度（0~1，可选） */
+  opacity?: number;
   /** 水平缩放（可选） */
   scaleX?: number;
   /** 垂直缩放（可选） */
@@ -131,6 +139,12 @@ export interface TextRenderElement extends BaseRenderElement {
   fontStyle?: string;
   /** 文本装饰：line-through | underline | "" */
   textDecoration?: string;
+  /** 行高倍数 */
+  lineHeight?: number;
+  /** 字间距像素 */
+  letterSpacing?: number;
+  /** 水平对齐：left | center | right | justify */
+  align?: string;
   /** 字体颜色（可选，CSS 色值） */
   fill?: string;
 }

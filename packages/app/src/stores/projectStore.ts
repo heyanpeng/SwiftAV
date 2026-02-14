@@ -635,6 +635,8 @@ export const useProjectStore = create<ProjectStore>()(
           text,
           fontSize: 96,
           fill: "#ffffff",
+          lineHeight: 1,
+          letterSpacing: 1,
         },
       };
       project = addClip(project, clip);
@@ -948,6 +950,38 @@ export const useProjectStore = create<ProjectStore>()(
           prevParams,
           mergedParams,
         ),
+      );
+    },
+
+    /**
+     * 瞬时更新 clip params，不写入历史。用于颜色/不透明度拖动时的实时预览。
+     */
+    updateClipParamsTransient(clipId: string, nextParams: Record<string, unknown>) {
+      const project = get().project;
+      if (!project) return;
+      const clip = findClipById(project, clipId as Clip["id"]);
+      if (!clip) return;
+      const mergedParams = { ...clip.params, ...nextParams } as Record<
+        string,
+        unknown
+      >;
+      const nextProject = updateClip(project, clipId as Clip["id"], {
+        params: mergedParams,
+      });
+      set({ project: nextProject });
+    },
+
+    /**
+     * 将已通过 transient 更新的 params 提交到历史。在拖动/选择结束时调用。
+     */
+    commitClipParamsChange(clipId: string, prevParams: Record<string, unknown>) {
+      const project = get().project;
+      if (!project) return;
+      const clip = findClipById(project, clipId as Clip["id"]);
+      if (!clip) return;
+      const nextParams = clip.params ?? {};
+      get().pushHistory(
+        createUpdateClipParamsCommand(get, set, clipId, prevParams, nextParams),
       );
     },
   })),

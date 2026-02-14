@@ -33,6 +33,10 @@ export function usePreviewTextSync(
       fontFamily?: string;
       fontStyle?: string;
       textDecoration?: string;
+      lineHeight?: number;
+      letterSpacing?: number;
+      align?: string;
+      opacity?: number;
       scaleX: number;
       scaleY: number;
       rotation: number;
@@ -66,6 +70,10 @@ export function usePreviewTextSync(
           fontFamily?: string;
           fontStyle?: string;
           textDecoration?: string;
+          lineHeight?: number;
+          letterSpacing?: number;
+          align?: string;
+          opacity?: number;
         };
 
         // 将工程坐标（project 宽高）缩放到画布坐标（stage 宽高）
@@ -85,6 +93,10 @@ export function usePreviewTextSync(
           fontFamily: params.fontFamily,
           fontStyle: params.fontStyle ?? "normal",
           textDecoration: params.textDecoration ?? "",
+          lineHeight: params.lineHeight ?? 1,
+          letterSpacing: (params.letterSpacing ?? 1) * Math.min(scaleX, scaleY),
+          align: params.align ?? "left",
+          opacity: params.opacity ?? 1,
           scaleX: clip.transform?.scaleX ?? 1,
           scaleY: clip.transform?.scaleY ?? 1,
           rotation: clip.transform?.rotation ?? 0,
@@ -114,6 +126,10 @@ export function usePreviewTextSync(
           fontFamily: clip.fontFamily,
           fontStyle: clip.fontStyle,
           textDecoration: clip.textDecoration,
+          lineHeight: clip.lineHeight,
+          letterSpacing: clip.letterSpacing,
+          align: clip.align,
+          opacity: clip.opacity,
           scaleX: clip.scaleX,
           scaleY: clip.scaleY,
           rotation: clip.rotation,
@@ -130,6 +146,10 @@ export function usePreviewTextSync(
           fontFamily: clip.fontFamily,
           fontStyle: clip.fontStyle,
           textDecoration: clip.textDecoration,
+          lineHeight: clip.lineHeight,
+          letterSpacing: clip.letterSpacing,
+          align: clip.align,
+          opacity: clip.opacity,
           scaleX: clip.scaleX,
           scaleY: clip.scaleY,
           rotation: clip.rotation,

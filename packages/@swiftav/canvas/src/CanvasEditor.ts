@@ -180,7 +180,11 @@ export class CanvasEditor {
       fontFamily: options.fontFamily ?? DEFAULT_FONT_FAMILY,
       fontStyle: options.fontStyle ?? "normal",
       textDecoration: options.textDecoration ?? "",
+      lineHeight: options.lineHeight ?? 1,
+      letterSpacing: options.letterSpacing ?? 1,
+      align: options.align ?? "left",
       fill: options.fill ?? DEFAULT_FILL,
+      opacity: options.opacity ?? 1,
       scaleX: options.scaleX ?? 1,
       scaleY: options.scaleY ?? 1,
       rotation: options.rotation ?? 0,
@@ -205,7 +209,11 @@ export class CanvasEditor {
     if (patch.fontFamily !== undefined) node.fontFamily(patch.fontFamily);
     if (patch.fontStyle !== undefined) node.fontStyle(patch.fontStyle);
     if (patch.textDecoration !== undefined) node.textDecoration(patch.textDecoration);
+    if (patch.lineHeight !== undefined) node.lineHeight(patch.lineHeight);
+    if (patch.letterSpacing !== undefined) node.letterSpacing(patch.letterSpacing);
+    if (patch.align !== undefined) node.align(patch.align);
     if (patch.fill !== undefined) node.fill(patch.fill);
+    if (patch.opacity !== undefined) node.opacity(patch.opacity);
     if (patch.scaleX !== undefined) node.scaleX(patch.scaleX);
     if (patch.scaleY !== undefined) node.scaleY(patch.scaleY);
     if (patch.rotation !== undefined) node.rotation(patch.rotation);

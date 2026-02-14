@@ -78,6 +78,12 @@ export function Preview() {
   const selectedClip =
     selectedClipId && project ? findClipById(project, selectedClipId) : null;
   const updateClipParams = useProjectStore((s) => s.updateClipParams);
+  const updateClipParamsTransient = useProjectStore(
+    (s) => s.updateClipParamsTransient,
+  );
+  const commitClipParamsChange = useProjectStore(
+    (s) => s.commitClipParamsChange,
+  );
   const isClipVisible =
     selectedClip != null &&
     currentTime >= selectedClip.start &&
@@ -105,6 +111,8 @@ export function Preview() {
         selectedClip={selectedClip}
         position={toolbarPosition}
         onUpdateParams={updateClipParams}
+        onUpdateParamsTransient={updateClipParamsTransient}
+        onCommitParamsChange={commitClipParamsChange}
       />
       <div className="preview-container__canvas-area" ref={containerRef} />
     </div>
