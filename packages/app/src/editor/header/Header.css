@@ -36,6 +36,7 @@
   transition: all 0.2s ease;
 }
 
+.app-editor-layout__project-name:hover,
 .app-editor-layout__project-name:focus {
   outline: none;
   background-color: #2a2a2a;
@@ -122,7 +123,9 @@
   color: var(--gray-11);
   cursor: pointer;
   border-radius: var(--radius-2);
-  transition: color 0.15s, background-color 0.15s;
+  transition:
+    color 0.15s,
+    background-color 0.15s;
 }
 
 .export-popover-close:hover {
@@ -148,7 +151,9 @@
   border: 2px solid transparent;
   border-radius: var(--radius-3);
   cursor: pointer;
-  transition: border-color 0.15s, background-color 0.15s;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
   min-height: 64px;
 }
 

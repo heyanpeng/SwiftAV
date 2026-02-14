@@ -28,44 +28,50 @@ const CREATION_TYPES = [
 // 图片生成模型
 const IMAGE_MODELS = [
   {
+    id: "banana",
+    name: "Nana Banana",
+    desc: "快速生成，创意无限",
+    isNew: true,
+  },
+  {
     id: "5.0-lite",
-    name: "图片 5.0 Lite",
+    name: "Seedream 5.0 Lite",
     desc: "指令响应更精准，生成效果更智能",
     isNew: true,
   },
   {
     id: "4.6",
-    name: "图片 4.6",
+    name: "Seedream 4.6",
     desc: "人像一致性保持更好，性价比更高",
     isNew: true,
   },
   {
     id: "4.5",
-    name: "图片 4.5",
+    name: "Seedream 4.5",
     desc: "强化一致性、风格与图文响应",
     isNew: false,
   },
   {
     id: "4.1",
-    name: "图片 4.1",
+    name: "Seedream 4.1",
     desc: "更专业的创意、美学和一致性保持",
     isNew: false,
   },
   {
     id: "4.0",
-    name: "图片 4.0",
+    name: "Seedream 4.0",
     desc: "支持多参考图、系列组图生成",
     isNew: false,
   },
   {
     id: "3.1",
-    name: "图片 3.1",
+    name: "Seedream 3.1",
     desc: "丰富的美学多样性，画面更鲜明生动",
     isNew: false,
   },
   {
     id: "3.0",
-    name: "图片 3.0",
+    name: "Seedream 3.0",
     desc: "影视质感，文字更准，直出 2k 高清图",
     isNew: false,
   },
@@ -181,7 +187,7 @@ function FilePreviewImage({
 
 function ImageGenPanel() {
   const [creationType, setCreationType] = useState("image");
-  const [selectedModel, setSelectedModel] = useState("4.1");
+  const [selectedModel, setSelectedModel] = useState("banana");
   const [selectedVideoModel, setSelectedVideoModel] = useState("seedance-2.0");
   const [startFrame, setStartFrame] = useState<File | null>(null);
   const [endFrame, setEndFrame] = useState<File | null>(null);
