@@ -88,16 +88,18 @@ export const ensureClipCanvasOnStage = (
   syncedVideoClipIdsRef: RefObject<Set<string>>,
 ): HTMLCanvasElement | null => {
   const { width: stageW, height: stageH } = getStageSize(editor);
+  const x = clip.transform?.x ?? 0;
+  const y = clip.transform?.y ?? 0;
+  const scaleX = clip.transform?.scaleX ?? 1;
+  const scaleY = clip.transform?.scaleY ?? 1;
+  const rotation = clip.transform?.rotation ?? 0;
+
   let canvas = clipCanvasesRef.current.get(clip.id);
   if (!canvas) {
     canvas = document.createElement("canvas");
     canvas.width = stageW;
     canvas.height = stageH;
     clipCanvasesRef.current.set(clip.id, canvas);
-    const x = clip.transform?.x ?? 0;
-    const y = clip.transform?.y ?? 0;
-    const scaleX = clip.transform?.scaleX ?? 1;
-    const scaleY = clip.transform?.scaleY ?? 1;
     const w = stageW * scaleX;
     const h = stageH * scaleY;
     editor.addVideo({
@@ -108,7 +110,21 @@ export const ensureClipCanvasOnStage = (
       width: w,
       height: h,
     });
+    if (rotation !== 0) {
+      editor.updateVideo(clip.id, { rotation });
+    }
     syncedVideoClipIdsRef.current.add(clip.id);
+  } else {
+    // 已有节点：同步完整 transform（含 rotation），undo 后画布才能正确恢复
+    editor.updateVideo(clip.id, {
+      x,
+      y,
+      width: stageW,
+      height: stageH,
+      scaleX,
+      scaleY,
+      rotation,
+    });
   }
   return canvas;
 };

@@ -126,7 +126,8 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   },
 
   /**
-   * 撤销上一条命令（undo），并将其移动到可重做历史
+   * 撤销上一条命令（undo），并将其移动到可重做历史。
+   * 若撤销后当前选中的 clip 已不存在于 project，则清除选中状态（同步清除画布选中框）。
    */
   undo() {
     const past = get().historyPast;
@@ -135,14 +136,21 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     }
     const cmd = past[past.length - 1];
     cmd.undo();
+    const project = get().project;
+    const selectedClipId = get().selectedClipId;
+    const shouldClearSelection =
+      selectedClipId &&
+      (!project || !findClipById(project, selectedClipId as Clip["id"]));
     set({
       historyPast: past.slice(0, -1),
       historyFuture: [...get().historyFuture, cmd],
+      ...(shouldClearSelection ? { selectedClipId: null } : {}),
     });
   },
 
   /**
-   * 重做上一条撤销的命令（redo）
+   * 重做上一条撤销的命令（redo）。
+   * 若重做后当前选中的 clip 已不存在于 project，则清除选中状态（同步清除画布选中框）。
    */
   async redo() {
     const future = get().historyFuture;
@@ -161,9 +169,15 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     if (promise) {
       await promise;
     }
+    const project = get().project;
+    const selectedClipId = get().selectedClipId;
+    const shouldClearSelection =
+      selectedClipId &&
+      (!project || !findClipById(project, selectedClipId as Clip["id"]));
     set({
       historyPast: [...get().historyPast, cmd],
       historyFuture: future.slice(0, -1),
+      ...(shouldClearSelection ? { selectedClipId: null } : {}),
     });
   },
 
@@ -357,12 +371,19 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
       if (!options?.skipHistory) {
         get().pushHistory(
-          createLoadVideoCommand(get, set, file, {
-            prevProject,
-            prevVideoUrl,
-            prevDuration,
-            prevCurrentTime,
-          }, blobUrl),
+          createLoadVideoCommand(
+            get,
+            set,
+            file,
+            {
+              prevProject,
+              prevVideoUrl,
+              prevDuration,
+              prevCurrentTime,
+            },
+            blobUrl,
+            project,
+          ),
         );
       }
     } finally {

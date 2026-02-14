@@ -187,7 +187,7 @@ export function createToggleTrackMutedCommand(
 	};
 }
 
-/** 添加视频（新建工程或追加轨道/clip）：undo 恢复添加前状态并 revoke blob；redo 再次调用 loadVideoFile（内部 skipHistory） */
+/** 添加视频（新建工程或追加轨道/clip）：undo 恢复添加前状态并 revoke blob；redo 恢复存下的 project 以保持 ID 不变，后续 UpdateClipTransform 等命令才能生效 */
 export type LoadVideoPrevState = {
 	prevProject: Project | null;
 	prevVideoUrl: string | null;
@@ -205,13 +205,31 @@ export function createLoadVideoCommand(
 	file: File,
 	prev: LoadVideoPrevState,
 	addedBlobUrl: string,
+	/** redo 时恢复的 project（含 clip/track/asset 的原始 ID），需替换 blob URL */
+	addedProject: Project,
 ): Command {
+	const blobUrlRef = { current: addedBlobUrl };
 	return {
 		execute: () => {
-			return get().loadVideoFile(file, { skipHistory: true });
+			const newBlobUrl = URL.createObjectURL(file);
+			blobUrlRef.current = newBlobUrl;
+			const projectRestored: Project = {
+				...addedProject,
+				assets: addedProject.assets.map((a) =>
+					a.source === addedBlobUrl ? { ...a, source: newBlobUrl } : a,
+				),
+			};
+			const duration = getProjectDuration(projectRestored);
+			set({
+				project: projectRestored,
+				videoUrl: newBlobUrl,
+				duration,
+				currentTime: Math.min(get().currentTime, duration),
+				isPlaying: false,
+			});
 		},
 		undo: () => {
-			URL.revokeObjectURL(addedBlobUrl);
+			URL.revokeObjectURL(blobUrlRef.current);
 			if (prev.prevProject === null) {
 				set({
 					project: null,

@@ -276,6 +276,32 @@ export class CanvasEditor {
     this.videoAnimationManager.maybeStopAnimation(this.videoMap);
   }
 
+  updateVideo(
+    id: string,
+    options: {
+      x?: number;
+      y?: number;
+      width?: number;
+      height?: number;
+      scaleX?: number;
+      scaleY?: number;
+      rotation?: number;
+    },
+  ): void {
+    const item = this.videoMap.get(id);
+    if (!item) return;
+
+    if (options.x !== undefined) item.node.x(options.x);
+    if (options.y !== undefined) item.node.y(options.y);
+    if (options.width !== undefined) item.node.width(options.width);
+    if (options.height !== undefined) item.node.height(options.height);
+    if (options.scaleX !== undefined) item.node.scaleX(options.scaleX);
+    if (options.scaleY !== undefined) item.node.scaleY(options.scaleY);
+    if (options.rotation !== undefined) item.node.rotation(options.rotation);
+
+    this.elementLayer.batchDraw();
+  }
+
   removeVideo(id: string): void {
     const item = this.videoMap.get(id);
     if (!item) return;
