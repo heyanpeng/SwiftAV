@@ -1,27 +1,11 @@
 import { Cloud, Upload } from "lucide-react";
-import { useRef, useState } from "react";
-import { useProjectStore } from "@/stores";
+import { useState } from "react";
+import { useAddMedia } from "@/hooks/useAddMedia";
 import "./MediaPanel.css";
 
-const VIDEO_ACCEPT = "video/*,video/x-matroska,video/mp2t,.ts";
-
 export function MediaPanel() {
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const loadVideoFile = useProjectStore((s) => s.loadVideoFile);
+  const { trigger, loadFile, fileInputRef, fileInputProps } = useAddMedia();
   const [isDragging, setIsDragging] = useState(false);
-
-  const handleClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange: React.ChangeEventHandler<HTMLInputElement> = async (
-    event,
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    await loadVideoFile(file);
-    event.target.value = "";
-  };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -46,14 +30,14 @@ export function MediaPanel() {
     if (!files?.length) return;
     const file = Array.from(files).find((f) => f.type.startsWith("video/"));
     if (!file) return;
-    await loadVideoFile(file);
+    await loadFile(file);
   };
 
   return (
     <div className="asset-panel">
       <div
         className={`asset-panel__upload-area ${isDragging ? "asset-panel__upload-area--dragging" : ""}`}
-        onClick={handleClick}
+        onClick={trigger}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -68,13 +52,7 @@ export function MediaPanel() {
             或将文件拖放到此处
           </span>
         </label>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept={VIDEO_ACCEPT}
-          style={{ display: "none" }}
-          onChange={handleFileChange}
-        />
+        <input ref={fileInputRef} {...fileInputProps} />
       </div>
     </div>
   );

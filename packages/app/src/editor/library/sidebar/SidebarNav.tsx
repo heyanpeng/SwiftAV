@@ -1,5 +1,5 @@
-import { Tooltip } from "@/components/Tooltip";
 import { Button } from "@radix-ui/themes";
+import { useAddMedia } from "@/hooks/useAddMedia";
 import {
   Plus,
   CloudUpload,
@@ -53,12 +53,21 @@ export const SidebarNav = ({
   activeTab = "media",
   onTabChange,
 }: SidebarNavProps) => {
+  const { trigger, fileInputRef, fileInputProps } = useAddMedia();
+
   return (
     <nav className="sidebar-nav">
-      {/* 顶部新增按钮（目前仅为图标展示） */}
-      <Button variant="solid" radius="full" size="1" className="nav-add-btn">
+      {/* 顶部添加媒体按钮，与媒体面板添加功能一致 */}
+      <Button
+        variant="solid"
+        radius="full"
+        size="1"
+        className="nav-add-btn"
+        onClick={trigger}
+      >
         <Plus size={16} />
       </Button>
+      <input ref={fileInputRef} {...fileInputProps} />
       {/* 所有导航项 */}
       <div className="nav-items">
         {navItems.map((item) => {
