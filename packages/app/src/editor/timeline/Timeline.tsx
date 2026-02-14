@@ -45,6 +45,7 @@ export function Timeline() {
   // 全局状态 & actions
   // ================
   const project = useProjectStore((s) => s.project);
+  const duration = useProjectStore((s) => s.duration);
   const setIsPlayingGlobal = useProjectStore((s) => s.setIsPlaying);
   const setCurrentTimeGlobal = useProjectStore((s) => s.setCurrentTime);
   const updateClipTiming = useProjectStore((s) => s.updateClipTiming);
@@ -144,21 +145,6 @@ export function Timeline() {
   }, [project]);
 
   /**
-   * 计算当前时间轴的最大时长
-   * 取所有轨道所有片段的 end 最大值
-   */
-  const duration = useMemo(() => {
-    return editorData.reduce((max, row) => {
-      const rowMax = row.actions.reduce(
-        (rowEnd: number, action: { end: number }) =>
-          Math.max(rowEnd, action.end),
-        0,
-      );
-      return Math.max(max, rowMax);
-    }, 0);
-  }, [editorData]);
-
-  /**
    * 每条轨道左侧音量按钮：静音时 cyan soft，未静音时 gray ghost，点击切换 muted
    */
   const renderRowPrefix = useCallback(
@@ -237,10 +223,11 @@ export function Timeline() {
 
   /**
    * 时间轴空白区域点击：跳到指定时间并暂停播放，同时同步本地与全局播放状态，并取消 clip 选中态。
-   * 时间限制在 [0, duration]，不超过视频总时长。
+   * 时间限制在 [0, duration]，从 store 读取 duration 避免闭包陈旧（clip 拖拽后立即点击时 duration 可能尚未随 re-render 更新）
    */
   const handleClickTimeArea = (time: number) => {
-    const clampedTime = Math.max(0, Math.min(time, duration));
+    const currentDuration = useProjectStore.getState().duration;
+    const clampedTime = Math.max(0, Math.min(time, currentDuration));
     const timelineState = timelineRef.current;
     if (timelineState) {
       timelineState.pause();
@@ -250,7 +237,6 @@ export function Timeline() {
     setCurrentTime(clampedTime);
     setCurrentTimeGlobal(clampedTime);
     setIsPlayingGlobal(false);
-    setSelectedClipId(null);
     return false;
   };
 
@@ -574,12 +560,8 @@ export function Timeline() {
                 Math.ceil(duration),
                 minScaleCountForView,
               )}
-              // 最大主刻度数：与最小值保持一致，这里不再额外预留超长空白区域
-              maxScaleCount={Math.max(
-                1,
-                Math.ceil(duration),
-                minScaleCountForView,
-              )}
+              // 最大主刻度数：Infinity 让库根据 editorData 自由扩展，避免 clip 右移后时间轴无法滚动到新范围
+              maxScaleCount={Infinity}
               renderRowPrefix={renderRowPrefix}
               // 自定义 action 渲染：为视频 clip 显示缩略图
               // @ts-ignore: 第三方类型未暴露 getActionRender，运行时支持该属性
