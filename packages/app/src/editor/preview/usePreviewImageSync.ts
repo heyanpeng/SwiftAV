@@ -1,6 +1,7 @@
 import { useEffect, useRef, type RefObject } from "react";
 import type { CanvasEditor } from "@swiftav/canvas";
 import type { Project } from "@swiftav/project";
+import { playbackClock } from "./playbackClock";
 
 /**
  * 图片缓存池，按 asset.id 存储已加载的 HTMLImageElement，
@@ -37,14 +38,18 @@ function loadImage(source: string): Promise<HTMLImageElement> {
  * - 按 id 对比内部已同步集合，决定增/删/更新（diff）
  * - 图片资源按 asset 缓存，避免相同 asset 重复创建对象
  *
+ * 播放时从 playbackClock 读取时间，暂停时用 store.currentTime。
+ *
  * @param editorRef 画布编辑器实例（RefObject）
  * @param project 项目数据对象，包含所有 track/clip/asset
  * @param currentTime 当前时间线位置（秒）
+ * @param isPlaying 是否正在播放
  */
 export function usePreviewImageSync(
   editorRef: RefObject<CanvasEditor | null>,
   project: Project | null,
   currentTime: number,
+  isPlaying: boolean,
 ): void {
   // 已同步到画布的图片 clip id 集合，避免重复 add/remove
   const syncedImageClipIdsRef = useRef<Set<string>>(new Set());
@@ -54,22 +59,9 @@ export function usePreviewImageSync(
    */
   const visibleImageIdsRef = useRef<Set<string>>(new Set());
 
-  useEffect(() => {
+  const syncImageForTime = (t: number) => {
     const editor = editorRef.current;
-    if (!editor) {
-      // 画布未初始化无需处理
-      return;
-    }
-    if (!project) {
-      // 项目被卸载或未加载，移除所有已同步图片
-      for (const id of syncedImageClipIdsRef.current) {
-        editor.removeImage(id);
-      }
-      syncedImageClipIdsRef.current.clear();
-      return;
-    }
-
-    const t = currentTime;
+    if (!editor || !project) return;
     const stageSize = editor.getStage().size();
     // 画布舞台宽高，最小为1，避免为0时出错
     const stageW = Math.max(1, Math.round(stageSize.width));
@@ -170,6 +162,40 @@ export function usePreviewImageSync(
           });
       }
     }
-    // 依赖全部核心变量，副作用钩子根据输入变更同步
-  }, [editorRef, project, currentTime]);
+  };
+
+  // project 卸载时清理
+  useEffect(() => {
+    if (project) return;
+    const editor = editorRef.current;
+    if (!editor) return;
+    for (const id of syncedImageClipIdsRef.current) {
+      editor.removeImage(id);
+    }
+    syncedImageClipIdsRef.current.clear();
+  }, [editorRef, project]);
+
+  // 暂停时：用 store.currentTime 同步
+  useEffect(() => {
+    if (isPlaying || !project) return;
+    const editor = editorRef.current;
+    if (!editor) return;
+    syncImageForTime(currentTime);
+  }, [editorRef, project, currentTime, isPlaying]);
+
+  // 播放时：rAF 循环从 playbackClock 读取时间并同步
+  useEffect(() => {
+    if (!isPlaying || !project) return;
+    let rafId: number | null = null;
+    const loop = () => {
+      syncImageForTime(playbackClock.currentTime);
+      rafId = requestAnimationFrame(loop);
+    };
+    rafId = requestAnimationFrame(loop);
+    return () => {
+      if (rafId != null) {
+        cancelAnimationFrame(rafId);
+      }
+    };
+  }, [editorRef, project, isPlaying]);
 }

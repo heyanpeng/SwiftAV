@@ -1,6 +1,7 @@
 import { useEffect, type RefObject } from "react";
 import type { CanvasEditor } from "@swiftav/canvas";
 import type { Project } from "@swiftav/project";
+import { playbackClock } from "./playbackClock";
 
 const RENDERABLE_KINDS = ["text", "image", "video"] as const;
 
@@ -41,18 +42,39 @@ export function getVisibleClipIdsInTrackOrder(
  * 同步画布元素叠放顺序为「按轨道 order」：上方轨道在上层。
  * 应在 usePreviewTextSync / usePreviewImageSync / usePreviewVideo 之后执行，
  * 确保节点已加入画布后再调整顺序。
+ * 播放时从 playbackClock 读取时间，暂停时用 store.currentTime。
  */
 export function usePreviewElementOrder(
   editorRef: RefObject<CanvasEditor | null>,
   project: Project | null,
   currentTime: number,
+  isPlaying: boolean,
 ): void {
+  // 暂停时：用 store.currentTime 同步
   useEffect(() => {
+    if (isPlaying || !project) return;
     const editor = editorRef.current;
-    if (!editor || !project) {
-      return;
-    }
+    if (!editor) return;
     const ids = getVisibleClipIdsInTrackOrder(project, currentTime);
     editor.setElementOrder(ids);
-  }, [editorRef, project, currentTime]);
+  }, [editorRef, project, currentTime, isPlaying]);
+
+  // 播放时：rAF 循环从 playbackClock 读取时间并同步
+  useEffect(() => {
+    if (!isPlaying || !project || !editorRef.current) return;
+    let rafId: number | null = null;
+    const loop = () => {
+      const editor = editorRef.current;
+      if (!editor) return;
+      const ids = getVisibleClipIdsInTrackOrder(project, playbackClock.currentTime);
+      editor.setElementOrder(ids);
+      rafId = requestAnimationFrame(loop);
+    };
+    rafId = requestAnimationFrame(loop);
+    return () => {
+      if (rafId != null) {
+        cancelAnimationFrame(rafId);
+      }
+    };
+  }, [editorRef, project, isPlaying]);
 }

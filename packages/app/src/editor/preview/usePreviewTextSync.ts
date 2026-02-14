@@ -1,35 +1,27 @@
 import { useEffect, useRef, type RefObject } from "react";
 import type { CanvasEditor } from "@swiftav/canvas";
 import type { Project } from "@swiftav/project";
+import { playbackClock } from "./playbackClock";
 
 /**
  * 根据 currentTime 将“可见”文本片段同步到画布上。
  * 逻辑：仅显示 start <= t < end 的文本片段；通过与内部已同步的文本片段 ID 集合 diff，实现 add/update/remove 操作。
+ * 播放时从 playbackClock 读取时间（store.currentTime 不每帧更新），暂停时用 store.currentTime。
  */
 export function usePreviewTextSync(
   editorRef: RefObject<CanvasEditor | null>,
   project: Project | null,
   currentTime: number,
+  isPlaying: boolean,
 ): void {
   // 已同步到画布上的文本 clip id 集合，避免重复 add/remove
   const syncedTextClipIdsRef = useRef<Set<string>>(new Set());
 
-  useEffect(() => {
+  const syncTextForTime = (t: number) => {
     const editor = editorRef.current;
-    if (!editor) {
-      // 画布未初始化，无需处理
+    if (!editor || !project) {
       return;
     }
-    if (!project) {
-      // 项目被卸载或未加载，移除所有已同步文本
-      for (const id of syncedTextClipIdsRef.current) {
-        editor.removeText(id);
-      }
-      syncedTextClipIdsRef.current.clear();
-      return;
-    }
-
-    const t = currentTime;
     // 收集当前时间点可见的所有文本 clip 信息
     const visibleTextClips: Array<{
       id: string;
@@ -130,5 +122,40 @@ export function usePreviewTextSync(
         syncedTextClipIdsRef.current.add(clip.id);
       }
     }
-  }, [editorRef, project, currentTime]);
+  };
+
+  // project 卸载时清理
+  useEffect(() => {
+    if (project) return;
+    const editor = editorRef.current;
+    if (!editor) return;
+    for (const id of syncedTextClipIdsRef.current) {
+      editor.removeText(id);
+    }
+    syncedTextClipIdsRef.current.clear();
+  }, [editorRef, project]);
+
+  // 暂停时：用 store.currentTime 同步（store 在 seek/暂停时会更新）
+  useEffect(() => {
+    if (isPlaying || !project) return;
+    const editor = editorRef.current;
+    if (!editor) return;
+    syncTextForTime(currentTime);
+  }, [editorRef, project, currentTime, isPlaying]);
+
+  // 播放时：rAF 循环从 playbackClock 读取时间并同步（store 不每帧更新）
+  useEffect(() => {
+    if (!isPlaying || !project) return;
+    let rafId: number | null = null;
+    const loop = () => {
+      syncTextForTime(playbackClock.currentTime);
+      rafId = requestAnimationFrame(loop);
+    };
+    rafId = requestAnimationFrame(loop);
+    return () => {
+      if (rafId != null) {
+        cancelAnimationFrame(rafId);
+      }
+    };
+  }, [editorRef, project, isPlaying]);
 }
