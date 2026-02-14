@@ -53,6 +53,8 @@ export function Timeline() {
   const duplicateClip = useProjectStore((s) => s.duplicateClip);
   const cutClip = useProjectStore((s) => s.cutClip);
   const deleteClip = useProjectStore((s) => s.deleteClip);
+  const selectedClipId = useProjectStore((s) => s.selectedClipId);
+  const setSelectedClipId = useProjectStore((s) => s.setSelectedClipId);
 
   // ================
   // ref & 本地 state
@@ -76,8 +78,6 @@ export function Timeline() {
    * 让刻度始终至少铺满当前视口宽度。
    */
   const [minScaleCountForView, setMinScaleCountForView] = useState(20);
-  /** 当前选中的 clip id，用于时间轴高亮与后续操作（如删除、属性面板） */
-  const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
 
   /** 视频缩略图：按 asset 维度缓存，由 useVideoThumbnails 生成并随 scaleWidth 追加 */
   const videoThumbnails = useVideoThumbnails(project, scaleWidth);

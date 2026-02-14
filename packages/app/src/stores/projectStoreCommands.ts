@@ -7,6 +7,7 @@ import type { Command } from "@swiftav/history";
 import {
 	type Project,
 	type Clip,
+	type ClipTransform,
 	updateClip,
 	getProjectDuration,
 	removeClip,
@@ -244,6 +245,34 @@ export function createSetCanvasBackgroundColorCommand(
 		},
 		undo: () => {
 			set({ canvasBackgroundColor: prevColor });
+		},
+	};
+}
+
+/** updateClipTransform：存前后 transform，undo/redo 对调 */
+export function createUpdateClipTransformCommand(
+	get: GetState,
+	set: SetState,
+	clipId: string,
+	prevTransform: ClipTransform | undefined,
+	nextTransform: ClipTransform,
+): Command {
+	return {
+		execute: () => {
+			const p = get().project;
+			if (!p) return;
+			const next = updateClip(p, clipId as Clip["id"], {
+				transform: nextTransform,
+			});
+			set({ project: next });
+		},
+		undo: () => {
+			const p = get().project;
+			if (!p) return;
+			const prev = updateClip(p, clipId as Clip["id"], {
+				transform: prevTransform,
+			});
+			set({ project: prev });
 		},
 	};
 }

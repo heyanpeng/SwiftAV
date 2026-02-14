@@ -27,6 +27,7 @@ import {
   createToggleTrackMutedCommand,
   createLoadVideoCommand,
   createSetCanvasBackgroundColorCommand,
+  createUpdateClipTransformCommand,
 } from "./projectStoreCommands";
 import type { ProjectStore } from "./projectStore.types";
 
@@ -106,6 +107,8 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   videoUrl: null,
   // 预览区域画布的背景色（CSS 颜色字符串）
   canvasBackgroundColor: "#000000",
+  // 当前选中的 clip id（画布选中编辑用）
+  selectedClipId: null,
   // 已完成的命令历史（用于撤销）
   historyPast: [],
   // 可重做的命令历史（用于重做）
@@ -689,5 +692,47 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     } finally {
       set({ loading: false });
     }
+  },
+
+  /**
+   * 设置当前选中的 clip id（画布选中编辑用）。
+   */
+  setSelectedClipId(id: string | null) {
+    set({ selectedClipId: id });
+  },
+
+  /**
+   * 更新指定 clip 的画布变换属性（位置、缩放、旋转等）。
+   * 用于 Preview 中选中的元素被移动、缩放、旋转后写回工程数据。
+   */
+  updateClipTransform(
+    clipId: string,
+    transform: { x?: number; y?: number; scaleX?: number; scaleY?: number; rotation?: number; width?: number; height?: number },
+  ) {
+    const project = get().project;
+    if (!project) return;
+
+    const clip = findClipById(project, clipId as Clip["id"]);
+    if (!clip) return;
+
+    const prevTransform = { ...clip.transform };
+
+    // 构建新的 transform（合并现有值和新值）
+    const newTransform = {
+      ...clip.transform,
+      ...transform,
+    };
+
+    // 使用 updateClip 更新 clip
+    const nextProject = updateClip(project, clipId, {
+      transform: newTransform,
+    });
+
+    set({ project: nextProject });
+
+    // 创建历史记录命令
+    get().pushHistory(
+      createUpdateClipTransformCommand(get, set, clipId, prevTransform, newTransform),
+    );
   },
 }));

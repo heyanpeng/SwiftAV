@@ -69,6 +69,14 @@ export interface ProjectStoreState {
   canvasBackgroundColor: string;
 
   /**
+   * 当前选中的 clip id（画布选中编辑用）。
+   *
+   * - `null`：没有选中任何 clip。
+   * - 非 `null`：选中的 clip id，Preview 会显示选中框和编辑控件。
+   */
+  selectedClipId: string | null;
+
+  /**
    * 撤销栈（命令模式）。不直接修改，仅通过 undo/redo 与各 action 内部 push 使用。
    */
   historyPast: Command[];
@@ -180,6 +188,24 @@ export interface ProjectStoreActions {
    * - `onProgress` 取值范围通常为 0~1（由底层 renderer 决定）。
    */
   exportToMp4(onProgress?: (progress: number) => void): Promise<Blob | null>;
+
+  /**
+   * 设置当前选中的 clip id（画布选中编辑用）。
+   * @param id clip id 或 null 取消选中
+   */
+  setSelectedClipId(id: string | null): void;
+
+  /**
+   * 更新指定 clip 的画布变换属性（位置、缩放、旋转、透明度等）。
+   * 用于 Preview 中选中的元素被移动、缩放、旋转后写回工程数据。
+   *
+   * @param clipId clip id
+   * @param transform 变换属性（部分字段，会合并到现有 transform 上）
+   */
+  updateClipTransform(
+    clipId: string,
+    transform: { x?: number; y?: number; scaleX?: number; scaleY?: number; rotation?: number; width?: number; height?: number },
+  ): void;
 }
 
 /**

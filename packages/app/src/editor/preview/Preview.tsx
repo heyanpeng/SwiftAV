@@ -31,6 +31,7 @@ import { usePreviewElementOrder } from "./usePreviewElementOrder";
 import { usePreviewImageSync } from "./usePreviewImageSync";
 import { usePreviewTextSync } from "./usePreviewTextSync";
 import { usePreviewVideo } from "./usePreviewVideo";
+import { usePreviewSelection } from "./usePreviewSelection";
 import "./Preview.css";
 
 /**
@@ -50,6 +51,7 @@ export function Preview() {
   // 从全局 store 获取当前工程 project 数据和当前时间戳（秒）
   const project = useProjectStore((s) => s.project);
   const currentTime = useProjectStore((s) => s.currentTime);
+  const isPlaying = useProjectStore((s) => s.isPlaying);
 
   // 同步当前帧所有可见文本片段进画布，自动处理增删改
   usePreviewTextSync(editorRef, project, currentTime);
@@ -62,6 +64,9 @@ export function Preview() {
 
   // 按轨道 order 设置元素叠放顺序，保证「上方轨道」显示在「下方轨道」上面
   usePreviewElementOrder(editorRef, project, currentTime);
+
+  // 选中编辑功能（播放时禁用）
+  usePreviewSelection(editorRef, { disabled: isPlaying });
 
   return <div className="preview-container" ref={containerRef} />;
 }
