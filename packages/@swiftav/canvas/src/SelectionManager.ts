@@ -107,7 +107,9 @@ export class SelectionManager {
       this.transformer.destroy();
     }
 
-    this.transformer = new Konva.Transformer(createTransformerConfig(node));
+    this.transformer = new Konva.Transformer(
+      createTransformerConfig(node, this.getNodeTypeById(this.selectedId!)),
+    );
 
     // 监听变换开始
     this.transformer.on("transformstart", () => {

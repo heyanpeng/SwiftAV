@@ -50,10 +50,18 @@ export function hasTransformChanged(
 
 /**
  * 创建标准 Transformer 配置
+ * @param node - Konva 节点
+ * @param nodeType - 节点类型（用于判断是否等比缩放：text、video 四角保持等比）
  */
 export function createTransformerConfig(
   node: Konva.Node,
+  nodeType?: "text" | "image" | "video" | null,
 ): Konva.TransformerConfig {
+  const keepRatio =
+    nodeType === "text" ||
+    nodeType === "video" ||
+    node.getClassName?.() === "Text";
+
   return {
     nodes: [node],
     enabledAnchors: [
@@ -76,8 +84,7 @@ export function createTransformerConfig(
     anchorStroke: SELECTION_STYLES.anchorStroke,
     anchorSize: SELECTION_STYLES.anchorSize,
     anchorCornerRadius: SELECTION_STYLES.anchorCornerRadius,
-    keepRatio:
-      node.getClassName?.() === "Text" ? true : SELECTION_STYLES.keepRatio,
+    keepRatio: keepRatio ? true : SELECTION_STYLES.keepRatio,
     shiftBehavior: SELECTION_STYLES.shiftBehavior,
   };
 }
