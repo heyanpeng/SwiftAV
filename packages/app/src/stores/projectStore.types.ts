@@ -91,6 +91,11 @@ export interface ProjectStoreState {
   selectedClipId: string | null;
 
   /**
+   * 时间轴 clip 拖拽时是否启用吸附（吸附到相邻 clip 边界）。
+   */
+  timelineSnapEnabled: boolean;
+
+  /**
    * 撤销栈（命令模式）。不直接修改，仅通过 undo/redo 与各 action 内部 push 使用。
    */
   historyPast: Command[];
@@ -140,6 +145,11 @@ export interface ProjectStoreActions {
    * 设置画布背景颜色（预览用）。
    */
   setCanvasBackgroundColor(color: string): void;
+
+  /**
+   * 设置时间轴吸附开关（clip 拖拽时是否吸附到相邻边界）。
+   */
+  setTimelineSnapEnabled(enabled: boolean): void;
 
   /**
    * 设置画布尺寸（width/height）。

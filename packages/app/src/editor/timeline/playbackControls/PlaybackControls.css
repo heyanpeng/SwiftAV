@@ -82,3 +82,59 @@
   opacity: 0.5;
   cursor: pointer;
 }
+
+/* 轨道设置 Popover（参考第二张图风格） */
+.playback-controls__popover-content {
+  padding: 10px 14px;
+  background: #2a2a2e;
+  border: 1px solid hsla(0, 0%, 100%, 0.08);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+  min-width: 160px;
+}
+
+.playback-controls__popover-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 6px 0;
+}
+
+.playback-controls__popover-label {
+  font-size: 14px;
+  color: #e0e0e0;
+}
+
+/* Switch 开关样式 */
+.playback-controls__switch {
+  width: 36px;
+  height: 20px;
+  background: #4a4a4f;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s ease;
+}
+
+.playback-controls__switch[data-state="checked"] {
+  background: #3b82f6;
+}
+
+.playback-controls__switch-thumb {
+  display: block;
+  width: 16px;
+  height: 16px;
+  background: #ffffff;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.2s ease;
+}
+
+.playback-controls__switch[data-state="checked"] .playback-controls__switch-thumb {
+  transform: translateX(16px);
+}

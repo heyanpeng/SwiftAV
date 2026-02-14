@@ -117,6 +117,8 @@ export const useProjectStore = create<ProjectStore>()(
     preferredCanvasPreset: null,
     // 当前选中的 clip id（画布选中编辑用）
     selectedClipId: null,
+    // 时间轴 clip 拖拽时是否启用吸附
+    timelineSnapEnabled: true,
     // 已完成的命令历史（用于撤销）
     historyPast: [],
     // 可重做的命令历史（用于重做）
@@ -423,6 +425,10 @@ export const useProjectStore = create<ProjectStore>()(
       );
     },
 
+    setTimelineSnapEnabled(enabled: boolean) {
+      set({ timelineSnapEnabled: enabled });
+    },
+
     /**
      * 设置画布尺寸（width/height）。
      * - 有工程时：更新 project 并支持撤销；
@@ -597,7 +603,9 @@ export const useProjectStore = create<ProjectStore>()(
         : undefined;
       const others = track ? track.clips.filter((c) => c.id !== clipId) : [];
       const { start: constrainedStart, end: constrainedEnd } =
-        constrainClipNoOverlap(others, clipId, start, end);
+        get().timelineSnapEnabled
+          ? constrainClipNoOverlap(others, clipId, start, end)
+          : { start, end };
 
       // 用 @swiftav/project 的纯函数更新 clip；必要时同时更新归属轨道
       const nextProject = updateClip(project, clipId, {

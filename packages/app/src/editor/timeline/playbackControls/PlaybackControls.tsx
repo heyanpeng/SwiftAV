@@ -1,7 +1,9 @@
 import "./PlaybackControls.css";
 import { Tooltip } from "@/components/Tooltip";
 import { Button } from "@radix-ui/themes";
+import { Popover, Switch } from "radix-ui";
 import { formatTime } from "@swiftav/utils";
+import { useProjectStore } from "@/stores";
 import {
   Scissors,
   Copy,
@@ -50,6 +52,11 @@ export const PlaybackControls = ({
   onCopyClip,
   onDeleteClip,
 }: PlaybackControlsProps) => {
+  const timelineSnapEnabled = useProjectStore((s) => s.timelineSnapEnabled);
+  const setTimelineSnapEnabled = useProjectStore(
+    (s) => s.setTimelineSnapEnabled,
+  );
+
   return (
     <div className="playback-controls">
       {/* 左侧剪切/复制/删除工具区 */}
@@ -128,11 +135,38 @@ export const PlaybackControls = ({
       </div>
       {/* 右侧轨道设置与缩放控制 */}
       <div className="playback-controls__right">
-        <Tooltip content="Track Settings">
-          <button className="playback-controls__btn" disabled>
-            <SlidersHorizontal size={16} />
-          </button>
-        </Tooltip>
+        <Popover.Root>
+          <Tooltip content="Timeline settings">
+            <Popover.Trigger asChild>
+              <button
+                className="playback-controls__btn"
+                type="button"
+                aria-label="Timeline settings"
+              >
+                <SlidersHorizontal size={16} />
+              </button>
+            </Popover.Trigger>
+          </Tooltip>
+          <Popover.Portal>
+            <Popover.Content
+              className="playback-controls__popover-content"
+              side="bottom"
+              sideOffset={6}
+              align="end"
+            >
+              <div className="playback-controls__popover-row">
+                <span className="playback-controls__popover-label">吸附</span>
+                <Switch.Root
+                  className="playback-controls__switch"
+                  checked={timelineSnapEnabled}
+                  onCheckedChange={setTimelineSnapEnabled}
+                >
+                  <Switch.Thumb className="playback-controls__switch-thumb" />
+                </Switch.Root>
+              </div>
+            </Popover.Content>
+          </Popover.Portal>
+        </Popover.Root>
         <span className="playback-controls__divider">|</span>
         <Tooltip content="Zoom Out">
           <button
