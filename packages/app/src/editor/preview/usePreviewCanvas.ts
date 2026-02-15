@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { CanvasEditor } from "@swiftav/canvas";
 import { useProjectStore } from "@/stores";
 
@@ -11,14 +11,17 @@ import { useProjectStore } from "@/stores";
  *
  * @param containerRef - 画布挂载用的 div ref，由 Preview 组件负责绑定
  * @param rafIdRef - 当前 requestAnimationFrame id，供外部清理/取消
- * @returns editorRef - 画布编辑器实例，供文本/视频/图片同步 hooks 使用
+ * @returns [editorRef, resizeTick] - 画布编辑器实例 + resize 计数器（每次画布尺寸变化递增，供同步 hooks 作为依赖触发重新同步）
  */
 export function usePreviewCanvas(
   containerRef: RefObject<HTMLDivElement | null>,
   rafIdRef: RefObject<number | null>,
-): RefObject<CanvasEditor | null> {
+): [RefObject<CanvasEditor | null>, number] {
   // 存储 CanvasEditor 实例，挂载/卸载生命周期管理
   const editorRef = useRef<CanvasEditor | null>(null);
+  // resize 计数器：每次画布尺寸变化递增，供同步 hooks 作为依赖触发元素重新同步
+  const [resizeTick, setResizeTick] = useState(0);
+  const bumpResizeTick = useCallback(() => setResizeTick((n) => n + 1), []);
 
   // 项目的画布背景色（响应全局 store 的变动）
   const canvasBackgroundColor = useProjectStore((s) => s.canvasBackgroundColor);
@@ -70,7 +73,8 @@ export function usePreviewCanvas(
     editorRef.current = editor;
 
     /**
-     * 处理窗口 resize：按当前画布比例重新计算尺寸
+     * 处理容器尺寸变化：按当前画布比例重新计算尺寸
+     * 同时覆盖窗口 resize 和面板拖拽等导致的容器大小变化
      */
     const handleResize = () => {
       if (!containerRef.current || !editorRef.current) return;
@@ -91,7 +95,6 @@ export function usePreviewCanvas(
       }
 
       const containerAspect = r.width / r.height;
-      // 重新对齐 16:9
       if (containerAspect > targetAspect) {
         newHeight = r.height;
         newWidth = r.height * targetAspect;
@@ -101,14 +104,16 @@ export function usePreviewCanvas(
       }
 
       editorRef.current.resize(newWidth, newHeight);
+      bumpResizeTick();
     };
 
-    // 挂载后监听全局窗口 resize 事件，动态布局
-    window.addEventListener("resize", handleResize);
+    // 使用 ResizeObserver 监听容器本身的尺寸变化（覆盖窗口 resize、面板拖拽、侧边栏展开等场景）
+    const resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(containerRef.current);
 
     // 清理函数：卸载/刷新时移除监听，销毁画布资源，取消任何 rAF 调度
     return () => {
-      window.removeEventListener("resize", handleResize);
+      resizeObserver.disconnect();
       editor.getStage().destroy(); // 销毁 Konva Stage
       editorRef.current = null;
       if (rafIdRef.current !== null) {
@@ -142,7 +147,8 @@ export function usePreviewCanvas(
     }
 
     editor.resize(newWidth, newHeight);
-  }, [canvasAspect]);
+    bumpResizeTick();
+  }, [canvasAspect, bumpResizeTick]);
 
   /**
    * 实时同步画布背景色
@@ -156,6 +162,6 @@ export function usePreviewCanvas(
     editor.setBackgroundColor(canvasBackgroundColor);
   }, [canvasBackgroundColor]);
 
-  // 交还 editorRef，供上层/子模块 hooks 使用
-  return editorRef;
+  // 交还 editorRef 和 resizeTick，供上层/子模块 hooks 使用
+  return [editorRef, resizeTick];
 }

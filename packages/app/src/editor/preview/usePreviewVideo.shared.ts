@@ -121,6 +121,11 @@ export const ensureClipCanvasOnStage = (
     });
     syncedVideoClipIdsRef.current.add(clip.id);
   } else {
+    // 画布 resize 后同步 canvas 元素的物理尺寸，保证后续 drawImage 分辨率正确
+    if (canvas.width !== stageW || canvas.height !== stageH) {
+      canvas.width = stageW;
+      canvas.height = stageH;
+    }
     editor.updateVideo(clip.id, {
       x: centerX,
       y: centerY,

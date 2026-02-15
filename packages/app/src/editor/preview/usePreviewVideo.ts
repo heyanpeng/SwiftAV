@@ -22,6 +22,7 @@ import type { SinkEntry, VideoPreviewRuntime } from "./usePreviewVideo.shared";
 export function usePreviewVideo(
   editorRef: RefObject<CanvasEditor | null>,
   rafIdRef: RefObject<number | null>,
+  resizeTick?: number,
 ): void {
   // 从全局 store 获取 project 与播放状态
   const project = useProjectStore((s) => s.project);
@@ -114,6 +115,7 @@ export function usePreviewVideo(
     duration,
     sinksReadyTick,
     runtime,
+    resizeTick,
   );
 
   // 3) 进入播放态：初始化 iterator 并绘制首帧、启动时钟、用 AudioBufferSink 启动各轨音频（内部用 getState().project/duration，避免 project/duration 变化如切换静音时重跑 effect）

@@ -51,7 +51,8 @@ export function Preview() {
   const rafIdRef = useRef<number | null>(null);
 
   // editorRef: 画布编辑器实例的 ref，由 usePreviewCanvas hook 初始化和托管
-  const editorRef = usePreviewCanvas(containerRef, rafIdRef);
+  // resizeTick: 画布尺寸变化计数器，传给同步 hooks 触发元素重新同步
+  const [editorRef, resizeTick] = usePreviewCanvas(containerRef, rafIdRef);
 
   // 从全局 store 获取当前工程 project 数据和当前时间戳（秒）
   const project = useProjectStore((s) => s.project);
@@ -60,13 +61,13 @@ export function Preview() {
   const selectedClipId = useProjectStore((s) => s.selectedClipId);
 
   // 同步当前帧所有可见文本片段进画布，自动处理增删改；播放时按 clip 时间显示/隐藏
-  usePreviewTextSync(editorRef, project, currentTime, isPlaying);
+  usePreviewTextSync(editorRef, project, currentTime, isPlaying, resizeTick);
 
   // 同步当前帧所有可见图片片段进画布，带缓存和异步加载；播放时按 clip 时间显示/隐藏
-  usePreviewImageSync(editorRef, project, currentTime, isPlaying);
+  usePreviewImageSync(editorRef, project, currentTime, isPlaying, resizeTick);
 
   // 挂载并驱动所有视频同步和播放调度（音频经 AudioBufferSink + Web Audio API 排程，与 media-player 一致）
-  usePreviewVideo(editorRef, rafIdRef);
+  usePreviewVideo(editorRef, rafIdRef, resizeTick);
 
   // 按轨道 order 设置元素叠放顺序，保证「上方轨道」显示在「下方轨道」上面
   usePreviewElementOrder(editorRef, project, currentTime, isPlaying);

@@ -13,6 +13,7 @@ export function usePreviewTextSync(
   project: Project | null,
   currentTime: number,
   isPlaying: boolean,
+  resizeTick?: number,
 ): void {
   // 已同步到画布上的文本 clip id 集合，避免重复 add/remove
   const syncedTextClipIdsRef = useRef<Set<string>>(new Set());
@@ -182,12 +183,13 @@ export function usePreviewTextSync(
   }, [editorRef, project]);
 
   // 暂停时：用 store.currentTime 同步（store 在 seek/暂停时会更新）
+  // resizeTick 变化时也需重新同步，确保画布缩放后元素位置/大小正确
   useEffect(() => {
     if (isPlaying || !project) return;
     const editor = editorRef.current;
     if (!editor) return;
     syncTextForTime(currentTime);
-  }, [editorRef, project, currentTime, isPlaying]);
+  }, [editorRef, project, currentTime, isPlaying, resizeTick]);
 
   // 播放时：rAF 循环从 playbackClock 读取时间并同步（store 不每帧更新）
   useEffect(() => {
