@@ -4,7 +4,7 @@
  * 该组件负责渲染工程中的多轨道内容到画布上（视频、文本、图片），并根据全局的当前播放时间和播放状态，自动同步画面。
  *
  * 实现说明：
- * - 视频轨道：每个视频 asset 通过一个 CanvasSink 渲染。根据 currentTime 计算哪些视频片段在当前帧“可见”，每个 active 片段会用 addVideo 生成一个 canvas 节点加入画布中。播放状态下通过 rAF 驱动帧前进和渲染；暂停/seek 时调用 getCanvas 拉取目标时间点的静止帧。
+ * - 视频轨道：每个视频 asset 通过一个 CanvasSink 渲染。根据 currentTime 计算哪些视频片段在当前帧"可见"，每个 active 片段会用 addVideo 生成一个 canvas 节点加入画布中。播放状态下通过 rAF 驱动帧前进和渲染；暂停/seek 时调用 getCanvas 拉取目标时间点的静止帧。
  * - 文本轨道：仅在 start <= currentTime < end 区间的文本片段会被 add/update 到画布上，否则就 remove。同步通过 usePreviewTextSync 实现，支持动态内容/位置变化。
  * - 图片轨道：逻辑类似文本，根据 currentTime 决定哪些图片片段可见且应显示。底层对 asset 做了缓存，以减少不必要的网络加载和对象创建，由 usePreviewImageSync 管理。
  *
@@ -34,6 +34,7 @@ import { usePreviewTextSync } from "./usePreviewTextSync";
 import { usePreviewVideo } from "./usePreviewVideo";
 import { usePreviewSelection } from "./usePreviewSelection";
 import { useSelectionToolbarPosition } from "./useSelectionToolbarPosition";
+import { SelectionToolbarFixed } from "./SelectionToolbarFixed";
 import { SelectionToolbar } from "./SelectionToolbar";
 import "./Preview.css";
 
@@ -96,7 +97,7 @@ export function Preview() {
   const toolbarVisible = !!selectedClipId && isClipVisible;
   const toolbarRef = useRef<HTMLDivElement | null>(null);
 
-  // Toolbar 跟随选中元素定位（直接 DOM 更新，与 Konva 同帧）
+  // SelectionToolbar 跟随选中元素定位（直接 DOM 更新，与 Konva 同帧）
   const toolbarPosition = useSelectionToolbarPosition(
     editorRef,
     previewContainerRef,
@@ -110,11 +111,10 @@ export function Preview() {
       className="preview-container preview-container--with-toolbar"
       ref={previewContainerRef}
     >
-      <SelectionToolbar
-        ref={toolbarRef}
+      {/* 顶部属性编辑工具栏：绝对定位悬浮在容器顶部居中，不影响画布尺寸 */}
+      <SelectionToolbarFixed
         visible={toolbarVisible}
         selectedClip={selectedClip}
-        position={toolbarPosition}
         onUpdateParams={updateClipParams}
         onUpdateParamsTransient={updateClipParamsTransient}
         onCommitParamsChange={commitClipParamsChange}
@@ -122,6 +122,14 @@ export function Preview() {
         getElementDimensions={() =>
           editorRef.current?.getStage().size() ?? null
         }
+      />
+      {/* 跟随元素的操作工具栏：复制 / 删除 */}
+      <SelectionToolbar
+        ref={toolbarRef}
+        visible={toolbarVisible}
+        clipId={selectedClipId}
+        clipKind={selectedClip?.kind}
+        position={toolbarPosition}
         onDuplicateClip={duplicateClip}
         onDeleteClip={(clipId) => {
           deleteClip(clipId);

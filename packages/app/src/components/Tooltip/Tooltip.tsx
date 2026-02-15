@@ -5,15 +5,24 @@ import "./Tooltip.css";
 type TooltipProps = {
   content: ReactNode;
   children: ReactNode;
+  /** 提示框显示方向，默认 "top" */
+  side?: "top" | "bottom" | "left" | "right";
+  /** 延迟显示（ms），默认 300 */
+  delayDuration?: number;
 };
 
 /**
  * 基于 Radix 的提示框，悬停显示 content。
  * 子元素为 disabled 按钮时用 span 包裹，保证仍能触发悬停。
  */
-export function Tooltip({ content, children }: TooltipProps) {
+export const Tooltip = ({
+  content,
+  children,
+  side = "top",
+  delayDuration = 300,
+}: TooltipProps) => {
   return (
-    <RadixTooltip.Root>
+    <RadixTooltip.Root delayDuration={delayDuration}>
       <RadixTooltip.Trigger asChild>
         <span className="tooltip-trigger">{children}</span>
       </RadixTooltip.Trigger>
@@ -21,11 +30,11 @@ export function Tooltip({ content, children }: TooltipProps) {
         <RadixTooltip.Content
           className="tooltip-content"
           sideOffset={6}
-          side="top"
+          side={side}
         >
           {content}
         </RadixTooltip.Content>
       </RadixTooltip.Portal>
     </RadixTooltip.Root>
   );
-}
+};
