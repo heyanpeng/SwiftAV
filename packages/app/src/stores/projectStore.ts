@@ -1149,11 +1149,39 @@ export const useProjectStore = create<ProjectStore>()(
         ? constrainClipNoOverlap(others, clipId, start, end)
         : { start, end };
 
+      // 音频 clip 在 resize（时长变化）时同步更新 inPoint/outPoint（用于限制可拉长回默认长度）
+      let patchInPoint: number | undefined;
+      let patchOutPoint: number | undefined;
+      const prevDuration = prevEnd - prevStart;
+      const nextDuration = constrainedEnd - constrainedStart;
+      if (
+        clipBefore?.kind === "audio" &&
+        Math.abs(prevDuration - nextDuration) > 1e-6
+      ) {
+        const asset = project.assets.find(
+          (a) => a.id === clipBefore.assetId,
+        );
+        const assetDuration = asset?.duration ?? prevEnd - prevStart;
+        const prevInPoint = clipBefore.inPoint ?? 0;
+        const prevOutPoint = clipBefore.outPoint ?? assetDuration;
+        const deltaStart = constrainedStart - prevStart;
+        const deltaEnd = constrainedEnd - prevEnd;
+        const rawIn = prevInPoint + deltaStart;
+        const rawOut = prevOutPoint + deltaEnd;
+        patchInPoint = Math.max(0, Math.min(assetDuration, rawIn));
+        patchOutPoint = Math.max(
+          patchInPoint + 0.001,
+          Math.min(assetDuration, rawOut),
+        );
+      }
+
       // 用 @swiftav/project 的纯函数更新 clip；必要时同时更新归属轨道
       const nextProject = updateClip(project, clipId, {
         start: constrainedStart,
         end: constrainedEnd,
         ...(trackId ? { trackId } : {}),
+        ...(patchInPoint !== undefined ? { inPoint: patchInPoint } : {}),
+        ...(patchOutPoint !== undefined ? { outPoint: patchOutPoint } : {}),
       });
 
       // 更新 clip 可能导致工程总时长变化，因此需要重新计算 duration
@@ -1177,6 +1205,12 @@ export const useProjectStore = create<ProjectStore>()(
           constrainedStart,
           constrainedEnd,
           effectiveTrackId,
+          clipBefore?.kind === "audio" ? (clipBefore.inPoint ?? 0) : undefined,
+          clipBefore?.kind === "audio"
+            ? (clipBefore.outPoint ?? (project.assets.find((a) => a.id === clipBefore.assetId)?.duration ?? prevEnd - prevStart))
+            : undefined,
+          patchInPoint,
+          patchOutPoint,
         ),
       );
     },

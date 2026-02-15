@@ -102,13 +102,28 @@ export function Timeline() {
     const sortedTracks = [...project.tracks].sort((a, b) => b.order - a.order);
     return sortedTracks.map((track) => ({
       id: track.id,
-      actions: track.clips.map((clip) => ({
-        id: clip.id,
-        start: clip.start,
-        end: clip.end,
-        effectId: clip.assetId, // 关联素材
-        selected: selectedClipId === clip.id, // 库会根据 selected 在 action 根节点加 class，用于选中高亮
-      })),
+      actions: track.clips.map((clip) => {
+        const base = {
+          id: clip.id,
+          start: clip.start,
+          end: clip.end,
+          effectId: clip.assetId, // 关联素材
+          selected: selectedClipId === clip.id, // 库会根据 selected 在 action 根节点加 class，用于选中高亮
+        };
+        // 音频 clip 只允许缩短，可拉长回默认长度（基于 asset 时长）
+        if (clip.kind === "audio") {
+          const asset = project.assets.find((a) => a.id === clip.assetId);
+          const assetDuration = asset?.duration ?? clip.end - clip.start;
+          const inPoint = clip.inPoint ?? 0;
+          const outPoint = clip.outPoint ?? assetDuration;
+          return {
+            ...base,
+            minStart: clip.start - inPoint,
+            maxEnd: clip.end + (assetDuration - outPoint),
+          };
+        }
+        return base;
+      }),
     }));
   }, [project, selectedClipId]);
 

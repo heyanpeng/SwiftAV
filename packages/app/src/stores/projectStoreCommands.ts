@@ -32,7 +32,7 @@ const syncDurationAndCurrentTime = (
   set({ project, duration, currentTime });
 };
 
-/** updateClipTiming：存「新」的 start/end/trackId，redo 时重算；undo 用 prev 打回 */
+/** updateClipTiming：存「新」的 start/end/trackId（及可选的 inPoint/outPoint），redo 时重算；undo 用 prev 打回 */
 export function createUpdateClipTimingCommand(
   get: GetState,
   set: SetState,
@@ -43,26 +43,36 @@ export function createUpdateClipTimingCommand(
   nextStart: number,
   nextEnd: number,
   nextTrackId: string | undefined,
+  prevInPoint?: number,
+  prevOutPoint?: number,
+  nextInPoint?: number,
+  nextOutPoint?: number,
 ): Command {
   return {
     execute: () => {
       const p = get().project;
       if (!p) return;
-      const next = updateClip(p, clipId as Clip["id"], {
+      const patch: Parameters<typeof updateClip>[2] = {
         start: nextStart,
         end: nextEnd,
         ...(nextTrackId !== undefined ? { trackId: nextTrackId } : {}),
-      });
+        ...(nextInPoint !== undefined ? { inPoint: nextInPoint } : {}),
+        ...(nextOutPoint !== undefined ? { outPoint: nextOutPoint } : {}),
+      };
+      const next = updateClip(p, clipId as Clip["id"], patch);
       syncDurationAndCurrentTime(set, next, get);
     },
     undo: () => {
       const p = get().project;
       if (!p) return;
-      const prev = updateClip(p, clipId as Clip["id"], {
+      const patch: Parameters<typeof updateClip>[2] = {
         start: prevStart,
         end: prevEnd,
         ...(prevTrackId !== undefined ? { trackId: prevTrackId } : {}),
-      });
+        ...(prevInPoint !== undefined ? { inPoint: prevInPoint } : {}),
+        ...(prevOutPoint !== undefined ? { outPoint: prevOutPoint } : {}),
+      };
+      const prev = updateClip(p, clipId as Clip["id"], patch);
       syncDurationAndCurrentTime(set, prev, get);
     },
   };
