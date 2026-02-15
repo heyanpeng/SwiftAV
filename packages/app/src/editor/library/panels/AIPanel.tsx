@@ -264,10 +264,7 @@ function ImageGenPanel() {
           const target = e.target as HTMLElement;
           if (target.closest(".ai-ref-delete")) return;
           if (isImageMode) {
-            if (
-              target.closest(".ai-ref-add-btn") ||
-              target.closest(".ai-ref-images-list")
-            ) {
+            if (target.closest(".ai-ref-add-btn")) {
               refInputRef.current?.click();
             }
           } else if (target.closest(".ai-ref-block--start")) {
