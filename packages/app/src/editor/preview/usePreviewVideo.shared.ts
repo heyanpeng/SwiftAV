@@ -93,6 +93,7 @@ export const ensureClipCanvasOnStage = (
   const scaleX = clip.transform?.scaleX ?? 1;
   const scaleY = clip.transform?.scaleY ?? 1;
   const rotation = clip.transform?.rotation ?? 0;
+  const opacity = clip.transform?.opacity ?? 1;
 
   // clip 存 top-left，节点用 center + offset 使旋转以中心为原点、位置不变
   const centerX = x + (stageW * scaleX) / 2;
@@ -116,6 +117,7 @@ export const ensureClipCanvasOnStage = (
       scaleX,
       scaleY,
       rotation,
+      opacity,
     });
     syncedVideoClipIdsRef.current.add(clip.id);
   } else {
@@ -129,6 +131,7 @@ export const ensureClipCanvasOnStage = (
       scaleX,
       scaleY,
       rotation,
+      opacity,
     });
   }
   return canvas;

@@ -896,6 +896,7 @@ export const useProjectStore = create<ProjectStore>()(
         rotation?: number;
         width?: number;
         height?: number;
+        opacity?: number;
       },
     ) {
       const project = get().project;

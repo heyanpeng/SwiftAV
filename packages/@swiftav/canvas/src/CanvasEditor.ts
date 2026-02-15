@@ -300,6 +300,7 @@ export class CanvasEditor {
       scaleX = 1,
       scaleY = 1,
       rotation = 0,
+      opacity = 1,
     } = options;
     const id = options.id ?? createId("video");
 
@@ -314,6 +315,7 @@ export class CanvasEditor {
       scaleX,
       scaleY,
       rotation,
+      opacity,
       draggable: true,
     });
 
@@ -351,6 +353,7 @@ export class CanvasEditor {
       scaleX?: number;
       scaleY?: number;
       rotation?: number;
+      opacity?: number;
     },
   ): void {
     const item = this.videoMap.get(id);
@@ -365,6 +368,7 @@ export class CanvasEditor {
     if (options.scaleX !== undefined) item.node.scaleX(options.scaleX);
     if (options.scaleY !== undefined) item.node.scaleY(options.scaleY);
     if (options.rotation !== undefined) item.node.rotation(options.rotation);
+    if (options.opacity !== undefined) item.node.opacity(options.opacity);
 
     this.elementLayer.batchDraw();
   }

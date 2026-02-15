@@ -258,7 +258,7 @@ export interface ProjectStoreActions {
    */
   updateClipTransform(
     clipId: string,
-    transform: { x?: number; y?: number; scaleX?: number; scaleY?: number; rotation?: number; width?: number; height?: number },
+    transform: { x?: number; y?: number; scaleX?: number; scaleY?: number; rotation?: number; width?: number; height?: number; opacity?: number },
   ): void;
 }
 

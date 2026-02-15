@@ -14,6 +14,14 @@ type PlaybackSetters = {
   setIsPlaying: (isPlaying: boolean) => void;
 };
 
+/** 计算 clip 的 gain 值：轨道静音为 0，否则为 clip.params.volume（0–1，默认 1） */
+function getClipGain(clip: Clip, track: Track): number {
+  if (track.muted ?? false) {
+    return 0;
+  }
+  return Math.min(1, Math.max(0, Number(clip.params?.volume) ?? 1));
+}
+
 /** 与 media-player 一致：遍历 AudioBufferSink.buffers()，按时间戳在 AudioContext 上排程播放；支持多轨（每 clip 一个 iterator、一个 GainNode） */
 async function runAudioIterator(
   clip: Clip,
@@ -34,7 +42,7 @@ async function runAudioIterator(
   let gainNode = gainNodeByClipIdRef.current.get(clip.id);
   if (!gainNode) {
     gainNode = ctx.createGain();
-    gainNode.gain.value = (track.muted ?? false) ? 0 : 1;
+    gainNode.gain.value = getClipGain(clip, track);
     gainNode.connect(ctx.destination);
     gainNodeByClipIdRef.current.set(clip.id, gainNode);
   }
@@ -534,11 +542,11 @@ export function usePreviewVideoPlaybackLoop(
           }
         }
 
-        // 播放中响应轨道静音变化：同步更新该 clip 的 GainNode（每 clip 一个）
+        // 播放中响应轨道静音和 clip 音量变化：同步更新该 clip 的 GainNode（每 clip 一个）
         for (const { clip, track } of active) {
           const g = gainNodeByClipIdRef.current.get(clip.id);
           if (g) {
-            g.gain.value = (track.muted ?? false) ? 0 : 1;
+            g.gain.value = getClipGain(clip, track);
           }
         }
 

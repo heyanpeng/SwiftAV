@@ -26,6 +26,9 @@ import {
   FlipHorizontal2,
   FlipVertical2,
   RotateCw,
+  Volume1,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { SELECTION_TOOLBAR_GAP } from "./constants";
 import type { ToolbarPosition } from "./useSelectionToolbarPosition";
@@ -85,7 +88,7 @@ type SelectionToolbarProps = {
   onUpdateParamsTransient?: (clipId: string, params: Record<string, unknown>) => void;
   /** 将 transient 变更提交到历史（拖动结束时调用） */
   onCommitParamsChange?: (clipId: string, prevParams: Record<string, unknown>) => void;
-  /** 更新 clip 变换（位置、缩放、旋转），写历史 */
+  /** 更新 clip 变换（位置、缩放、旋转、不透明度），写历史 */
   onUpdateTransform?: (
     clipId: string,
     transform: {
@@ -94,6 +97,7 @@ type SelectionToolbarProps = {
       scaleX?: number;
       scaleY?: number;
       rotation?: number;
+      opacity?: number;
     },
   ) => void;
   /** 获取元素尺寸（视频需用于翻转时位置补偿，保持中心不动） */
@@ -159,6 +163,23 @@ export const SelectionToolbar = forwardRef<
   const opacity = Math.min(1, Math.max(0, Number(params.opacity) || 1));
   const opacityPercent = Math.round(opacity * 100);
 
+  /** 视频使用 transform.opacity，文本使用 params.opacity */
+  const videoOpacity =
+    clipKind === "video"
+      ? Math.min(1, Math.max(0, Number(selectedClip?.transform?.opacity) || 1))
+      : opacity;
+  const videoOpacityPercent = Math.round(videoOpacity * 100);
+
+  /** 视频音量，存于 params.volume，0–1 默认 1 */
+  const rawVolume = Number(selectedClip?.params?.volume);
+  const videoVolume =
+    clipKind === "video"
+      ? Number.isFinite(rawVolume)
+        ? Math.min(1, Math.max(0, rawVolume))
+        : 1
+      : 1;
+  const videoVolumePercent = Math.round(videoVolume * 100);
+
   const scaleX = selectedClip?.transform?.scaleX ?? 1;
   const scaleY = selectedClip?.transform?.scaleY ?? 1;
   const rotation = selectedClip?.transform?.rotation ?? 0;
@@ -170,6 +191,7 @@ export const SelectionToolbar = forwardRef<
       scaleX?: number;
       scaleY?: number;
       rotation?: number;
+      opacity?: number;
     },
   ) => {
     if (clipId && onUpdateTransform) {
@@ -267,6 +289,14 @@ export const SelectionToolbar = forwardRef<
   const update = (patch: Partial<TextClipParams>) => {
     if (clipId && onUpdateParams) {
       onUpdateParams(clipId, { ...params, ...patch });
+    }
+  };
+
+  /** 视频专用：更新 params（如 volume） */
+  const updateVideoParams = (patch: Record<string, unknown>) => {
+    if (clipId && onUpdateParams) {
+      const current = (selectedClip?.params ?? {}) as Record<string, unknown>;
+      onUpdateParams(clipId, { ...current, ...patch });
     }
   };
 
@@ -757,6 +787,136 @@ export const SelectionToolbar = forwardRef<
                 </Select.Content>
               </Select.Portal>
             </Select.Root>
+
+            <Toolbar.Separator className="selection-toolbar__separator" />
+
+            {transformButtons}
+          </>
+        ) : clipKind === "video" ? (
+          <>
+            {/* 视频音量 */}
+            <Popover.Root>
+              <Popover.Trigger asChild>
+                <Toolbar.Button
+                  className="selection-toolbar__btn selection-toolbar__opacity-trigger"
+                  type="button"
+                  aria-label="音量"
+                  title="音量"
+                >
+                  {videoVolume <= 0 ? (
+                    <VolumeX size={16} />
+                  ) : videoVolume < 0.5 ? (
+                    <Volume1 size={16} />
+                  ) : (
+                    <Volume2 size={16} />
+                  )}
+                  <span className="selection-toolbar__opacity-value">
+                    {videoVolumePercent}%
+                  </span>
+                </Toolbar.Button>
+              </Popover.Trigger>
+              <Popover.Portal>
+                <Popover.Content
+                  className="selection-toolbar__popover selection-toolbar__opacity-popover"
+                  side="top"
+                  sideOffset={6}
+                  onOpenAutoFocus={(e) => e.preventDefault()}
+                >
+                  <div className="selection-toolbar__opacity-controls">
+                    <Slider.Root
+                      className="selection-toolbar__opacity-slider"
+                      value={[videoVolumePercent]}
+                      onValueChange={([v]) => {
+                        const val = (v ?? 100) / 100;
+                        updateVideoParams({ volume: val });
+                      }}
+                      min={0}
+                      max={100}
+                      step={1}
+                    >
+                      <Slider.Track className="selection-toolbar__opacity-slider-track">
+                        <Slider.Range className="selection-toolbar__opacity-slider-range" />
+                      </Slider.Track>
+                      <Slider.Thumb className="selection-toolbar__opacity-slider-thumb" />
+                    </Slider.Root>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={videoVolumePercent}
+                      onChange={(e) => {
+                        const raw = Number(e.target.value);
+                        if (!Number.isFinite(raw)) return;
+                        const v = Math.min(100, Math.max(0, raw)) / 100;
+                        updateVideoParams({ volume: v });
+                      }}
+                      className="selection-toolbar__opacity-input"
+                      aria-label="音量百分比"
+                    />
+                  </div>
+                </Popover.Content>
+              </Popover.Portal>
+            </Popover.Root>
+
+            {/* 视频不透明度 */}
+            <Popover.Root>
+              <Popover.Trigger asChild>
+                <Toolbar.Button
+                  className="selection-toolbar__btn selection-toolbar__opacity-trigger"
+                  type="button"
+                  aria-label="不透明度"
+                  title="不透明度"
+                >
+                  <Contrast size={16} />
+                  <span className="selection-toolbar__opacity-value">
+                    {videoOpacityPercent}%
+                  </span>
+                </Toolbar.Button>
+              </Popover.Trigger>
+              <Popover.Portal>
+                <Popover.Content
+                  className="selection-toolbar__popover selection-toolbar__opacity-popover"
+                  side="top"
+                  sideOffset={6}
+                  onOpenAutoFocus={(e) => e.preventDefault()}
+                >
+                  <div className="selection-toolbar__opacity-controls">
+                    <Slider.Root
+                      className="selection-toolbar__opacity-slider"
+                      value={[videoOpacityPercent]}
+                      onValueChange={([v]) => {
+                        const val = (v ?? 100) / 100;
+                        updateTransform({ opacity: val });
+                      }}
+                      min={0}
+                      max={100}
+                      step={1}
+                    >
+                      <Slider.Track className="selection-toolbar__opacity-slider-track">
+                        <Slider.Range className="selection-toolbar__opacity-slider-range" />
+                      </Slider.Track>
+                      <Slider.Thumb className="selection-toolbar__opacity-slider-thumb" />
+                    </Slider.Root>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={videoOpacityPercent}
+                      onChange={(e) => {
+                        const raw = Number(e.target.value);
+                        if (!Number.isFinite(raw)) return;
+                        const v = Math.min(100, Math.max(0, raw)) / 100;
+                        updateTransform({ opacity: v });
+                      }}
+                      className="selection-toolbar__opacity-input"
+                      aria-label="不透明度百分比"
+                    />
+                  </div>
+                </Popover.Content>
+              </Popover.Portal>
+            </Popover.Root>
 
             <Toolbar.Separator className="selection-toolbar__separator" />
 

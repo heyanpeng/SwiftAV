@@ -100,6 +100,8 @@ export interface VideoOptions {
   scaleX?: number;
   scaleY?: number;
   rotation?: number;
+  /** 不透明度，0–1，默认 1 */
+  opacity?: number;
 }
 
 /**
