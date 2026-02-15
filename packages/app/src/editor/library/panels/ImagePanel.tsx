@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Search, Maximize2, Upload, Plus } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useProjectStore } from "@/stores/projectStore";
+import { add as addToMediaStorage } from "@/utils/mediaStorage";
 import "./ImagePanel.css";
 
 const PEXELS_PHOTOS_API_BASE = "https://api.pexels.com/v1";
@@ -200,11 +201,13 @@ export function ImagePanel() {
   );
 
   const handleAddToLibrary = useCallback((image: ImageItem) => {
-    const a = document.createElement("a");
-    a.href = image.imageUrl;
-    a.download = `pexels-${image.id}.jpg`;
-    a.rel = "noopener";
-    a.click();
+    addToMediaStorage({
+      id: `pexels-image-${image.id}`,
+      name: `pexels-${image.id}.jpg`,
+      type: "image",
+      addedAt: Date.now(),
+      url: image.imageUrl,
+    });
     setPreviewImage(null);
   }, []);
 

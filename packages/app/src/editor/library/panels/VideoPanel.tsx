@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Search, Maximize2, Upload, Plus } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useProjectStore } from "@/stores/projectStore";
+import { add as addToMediaStorage } from "@/utils/mediaStorage";
 import "./VideoPanel.css";
 
 const PEXELS_API_BASE = "https://api.pexels.com/videos";
@@ -232,11 +233,14 @@ export function VideoPanel() {
   );
 
   const handleAddToLibrary = useCallback((video: VideoItem) => {
-    const a = document.createElement("a");
-    a.href = video.videoUrl;
-    a.download = `pexels-${video.id}.mp4`;
-    a.rel = "noopener";
-    a.click();
+    addToMediaStorage({
+      id: `pexels-video-${video.id}`,
+      name: `pexels-${video.id}.mp4`,
+      type: "video",
+      addedAt: Date.now(),
+      url: video.videoUrl,
+      duration: video.durationSeconds,
+    });
     setPreviewVideo(null);
   }, []);
 
