@@ -23,9 +23,11 @@ import {
   ChevronDown,
   Check,
   Contrast,
+  CopyPlus,
   FlipHorizontal2,
   FlipVertical2,
   RotateCw,
+  Trash2,
   Volume1,
   Volume2,
   VolumeX,
@@ -85,9 +87,15 @@ type SelectionToolbarProps = {
   /** 更新 clip 参数（写历史，用于离散操作） */
   onUpdateParams?: (clipId: string, params: Record<string, unknown>) => void;
   /** 瞬时更新（不写历史，用于拖动时的实时预览） */
-  onUpdateParamsTransient?: (clipId: string, params: Record<string, unknown>) => void;
+  onUpdateParamsTransient?: (
+    clipId: string,
+    params: Record<string, unknown>,
+  ) => void;
   /** 将 transient 变更提交到历史（拖动结束时调用） */
-  onCommitParamsChange?: (clipId: string, prevParams: Record<string, unknown>) => void;
+  onCommitParamsChange?: (
+    clipId: string,
+    prevParams: Record<string, unknown>,
+  ) => void;
   /** 更新 clip 变换（位置、缩放、旋转、不透明度），写历史 */
   onUpdateTransform?: (
     clipId: string,
@@ -102,6 +110,10 @@ type SelectionToolbarProps = {
   ) => void;
   /** 获取元素尺寸（视频需用于翻转时位置补偿，保持中心不动） */
   getElementDimensions?: () => { width: number; height: number } | null;
+  /** 创建选中 clip 的副本 */
+  onDuplicateClip?: (clipId: string) => void;
+  /** 删除选中的 clip */
+  onDeleteClip?: (clipId: string) => void;
 };
 
 /** 将 fontStyle 字符串解析为 bold/italic 布尔（italic 含 oblique） */
@@ -140,6 +152,8 @@ export const SelectionToolbar = forwardRef<
     onCommitParamsChange,
     onUpdateTransform,
     getElementDimensions,
+    onDuplicateClip,
+    onDeleteClip,
   },
   ref,
 ) {
@@ -184,16 +198,14 @@ export const SelectionToolbar = forwardRef<
   const scaleY = selectedClip?.transform?.scaleY ?? 1;
   const rotation = selectedClip?.transform?.rotation ?? 0;
 
-  const updateTransform = (
-    patch: {
-      x?: number;
-      y?: number;
-      scaleX?: number;
-      scaleY?: number;
-      rotation?: number;
-      opacity?: number;
-    },
-  ) => {
+  const updateTransform = (patch: {
+    x?: number;
+    y?: number;
+    scaleX?: number;
+    scaleY?: number;
+    rotation?: number;
+    opacity?: number;
+  }) => {
     if (clipId && onUpdateTransform) {
       onUpdateTransform(clipId, patch);
     }
@@ -304,7 +316,8 @@ export const SelectionToolbar = forwardRef<
   const rafIdRef = useRef<number | null>(null);
 
   const flushTransient = useCallback(() => {
-    if (!clipId || !onUpdateParamsTransient || !pendingTransientRef.current) return;
+    if (!clipId || !onUpdateParamsTransient || !pendingTransientRef.current)
+      return;
     onUpdateParamsTransient(clipId, pendingTransientRef.current);
     pendingTransientRef.current = null;
   }, [clipId, onUpdateParamsTransient]);
@@ -791,6 +804,34 @@ export const SelectionToolbar = forwardRef<
             <Toolbar.Separator className="selection-toolbar__separator" />
 
             {transformButtons}
+
+            {(clipId && (onDuplicateClip || onDeleteClip)) ? (
+              <>
+                <Toolbar.Separator className="selection-toolbar__separator" />
+                {onDuplicateClip ? (
+                  <Toolbar.Button
+                    className="selection-toolbar__btn"
+                    type="button"
+                    aria-label="创建副本"
+                    title="创建副本"
+                    onClick={() => onDuplicateClip(clipId)}
+                  >
+                    <CopyPlus size={16} />
+                  </Toolbar.Button>
+                ) : null}
+                {onDeleteClip ? (
+                  <Toolbar.Button
+                    className="selection-toolbar__btn"
+                    type="button"
+                    aria-label="删除"
+                    title="删除"
+                    onClick={() => onDeleteClip(clipId)}
+                  >
+                    <Trash2 size={16} />
+                  </Toolbar.Button>
+                ) : null}
+              </>
+            ) : null}
           </>
         ) : clipKind === "video" ? (
           <>
@@ -859,6 +900,8 @@ export const SelectionToolbar = forwardRef<
               </Popover.Portal>
             </Popover.Root>
 
+            <Toolbar.Separator className="selection-toolbar__separator" />
+
             {/* 视频不透明度 */}
             <Popover.Root>
               <Popover.Trigger asChild>
@@ -921,9 +964,66 @@ export const SelectionToolbar = forwardRef<
             <Toolbar.Separator className="selection-toolbar__separator" />
 
             {transformButtons}
+
+            {(clipId && (onDuplicateClip || onDeleteClip)) ? (
+              <>
+                <Toolbar.Separator className="selection-toolbar__separator" />
+                {onDuplicateClip ? (
+                  <Toolbar.Button
+                    className="selection-toolbar__btn"
+                    type="button"
+                    aria-label="创建副本"
+                    title="创建副本"
+                    onClick={() => onDuplicateClip(clipId)}
+                  >
+                    <CopyPlus size={16} />
+                  </Toolbar.Button>
+                ) : null}
+                {onDeleteClip ? (
+                  <Toolbar.Button
+                    className="selection-toolbar__btn"
+                    type="button"
+                    aria-label="删除"
+                    title="删除"
+                    onClick={() => onDeleteClip(clipId)}
+                  >
+                    <Trash2 size={16} />
+                  </Toolbar.Button>
+                ) : null}
+              </>
+            ) : null}
           </>
         ) : (
-          transformButtons
+          <>
+            {transformButtons}
+            {(clipId && (onDuplicateClip || onDeleteClip)) ? (
+              <>
+                <Toolbar.Separator className="selection-toolbar__separator" />
+                {onDuplicateClip ? (
+                  <Toolbar.Button
+                    className="selection-toolbar__btn"
+                    type="button"
+                    aria-label="创建副本"
+                    title="创建副本"
+                    onClick={() => onDuplicateClip(clipId)}
+                  >
+                    <CopyPlus size={16} />
+                  </Toolbar.Button>
+                ) : null}
+                {onDeleteClip ? (
+                  <Toolbar.Button
+                    className="selection-toolbar__btn"
+                    type="button"
+                    aria-label="删除"
+                    title="删除"
+                    onClick={() => onDeleteClip(clipId)}
+                  >
+                    <Trash2 size={16} />
+                  </Toolbar.Button>
+                ) : null}
+              </>
+            ) : null}
+          </>
         )}
       </Toolbar.Root>
     </div>

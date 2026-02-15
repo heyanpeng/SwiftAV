@@ -85,6 +85,9 @@ export function Preview() {
     (s) => s.commitClipParamsChange,
   );
   const updateClipTransform = useProjectStore((s) => s.updateClipTransform);
+  const duplicateClip = useProjectStore((s) => s.duplicateClip);
+  const deleteClip = useProjectStore((s) => s.deleteClip);
+  const setSelectedClipId = useProjectStore((s) => s.setSelectedClipId);
   const isClipVisible =
     selectedClip != null &&
     currentTime >= selectedClip.start &&
@@ -118,6 +121,11 @@ export function Preview() {
         getElementDimensions={() =>
           editorRef.current?.getStage().size() ?? null
         }
+        onDuplicateClip={duplicateClip}
+        onDeleteClip={(clipId) => {
+          deleteClip(clipId);
+          setSelectedClipId(null);
+        }}
       />
       <div className="preview-container__canvas-area" ref={containerRef} />
     </div>
