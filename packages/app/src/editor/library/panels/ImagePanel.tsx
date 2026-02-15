@@ -123,7 +123,6 @@ export function ImagePanel() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [queryForApi, setQueryForApi] = useState("nature");
-  const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
 
   const loadPage = useCallback(
     async (q: string, pageNum: number, append: boolean) => {
@@ -170,10 +169,12 @@ export function ImagePanel() {
   const showLoadMore = !isLoading && !error && hasMore && images.length > 0;
 
   const [previewImage, setPreviewImage] = useState<ImageItem | null>(null);
+  const [addingImageId, setAddingImageId] = useState<string | null>(null);
   const loadImageFile = useProjectStore((s) => s.loadImageFile);
 
-  const handleAddToTimeline = useCallback(
+  const addImageToCanvas = useCallback(
     async (image: ImageItem) => {
+      setAddingImageId(image.id);
       try {
         const res = await fetch(image.imageUrl);
         const blob = await res.blob();
@@ -183,10 +184,19 @@ export function ImagePanel() {
         await loadImageFile(file);
         setPreviewImage(null);
       } catch (err) {
-        console.error("添加图片到时间轴失败:", err);
+        console.error("添加图片到画板失败:", err);
+      } finally {
+        setAddingImageId(null);
       }
     },
     [loadImageFile],
+  );
+
+  const handleAddToTimeline = useCallback(
+    async (image: ImageItem) => {
+      await addImageToCanvas(image);
+    },
+    [addImageToCanvas],
   );
 
   const handleAddToLibrary = useCallback((image: ImageItem) => {
@@ -257,15 +267,14 @@ export function ImagePanel() {
                 <div
                   key={image.id}
                   className={`image-panel__image-item ${
-                    selectedImageId === image.id
-                      ? "image-panel__image-item--selected"
-                      : ""
-                  } ${
                     image.aspectRatio === "portrait"
                       ? "image-panel__image-item--portrait"
                       : ""
                   }`}
-                  onClick={() => setSelectedImageId(image.id)}
+                  onClick={() => {
+                    if (addingImageId === image.id) return;
+                    void addImageToCanvas(image);
+                  }}
                 >
                   <div className="image-panel__image-thumbnail">
                     <img
@@ -284,6 +293,11 @@ export function ImagePanel() {
                     >
                       <Maximize2 size={18} />
                     </button>
+                    {addingImageId === image.id && (
+                      <div className="image-panel__adding-mask">
+                        <span className="image-panel__adding-text">添加中…</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))
@@ -354,7 +368,12 @@ export function ImagePanel() {
                     <button
                       type="button"
                       className="image-panel__dialog-btn image-panel__dialog-btn--primary"
-                      onClick={() => handleAddToTimeline(previewImage)}
+                      onClick={async () => {
+                        const image = previewImage;
+                        if (!image) return;
+                        setPreviewImage(null);
+                        await handleAddToTimeline(image);
+                      }}
                     >
                       <Plus size={16} />
                       添加到时间轴

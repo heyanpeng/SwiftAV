@@ -151,7 +151,6 @@ export function VideoPanel() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [queryForApi, setQueryForApi] = useState("nature");
-  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [hoveredVideoId, setHoveredVideoId] = useState<string | null>(null);
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
 
@@ -201,11 +200,13 @@ export function VideoPanel() {
   const showLoadMore = !isLoading && !error && hasMore && videos.length > 0;
 
   const [previewVideo, setPreviewVideo] = useState<VideoItem | null>(null);
+  const [addingVideoId, setAddingVideoId] = useState<string | null>(null);
   const previewVideoRef = useRef<HTMLVideoElement | null>(null);
   const loadVideoFile = useProjectStore((s) => s.loadVideoFile);
 
-  const handleAddToTimeline = useCallback(
+  const addVideoToCanvas = useCallback(
     async (video: VideoItem) => {
+      setAddingVideoId(video.id);
       try {
         const res = await fetch(video.videoUrl);
         const blob = await res.blob();
@@ -215,10 +216,19 @@ export function VideoPanel() {
         await loadVideoFile(file);
         setPreviewVideo(null);
       } catch (err) {
-        console.error("添加视频到时间轴失败:", err);
+        console.error("添加视频到画板失败:", err);
+      } finally {
+        setAddingVideoId(null);
       }
     },
     [loadVideoFile],
+  );
+
+  const handleAddToTimeline = useCallback(
+    async (video: VideoItem) => {
+      await addVideoToCanvas(video);
+    },
+    [addVideoToCanvas],
   );
 
   const handleAddToLibrary = useCallback((video: VideoItem) => {
@@ -288,15 +298,14 @@ export function VideoPanel() {
                   <div
                     key={video.id}
                     className={`video-panel__video-item ${
-                      selectedVideoId === video.id
-                        ? "video-panel__video-item--selected"
-                        : ""
-                    } ${
                       video.aspectRatio === "portrait"
                         ? "video-panel__video-item--portrait"
                         : ""
                     }`}
-                    onClick={() => setSelectedVideoId(video.id)}
+                    onClick={() => {
+                      if (addingVideoId === video.id) return;
+                      void addVideoToCanvas(video);
+                    }}
                     onMouseEnter={() => {
                       setHoveredVideoId(video.id);
                       const el = videoRefs.current[video.id];
@@ -345,6 +354,11 @@ export function VideoPanel() {
                       >
                         <Maximize2 size={18} />
                       </button>
+                      {addingVideoId === video.id && (
+                        <div className="video-panel__adding-mask">
+                          <span className="video-panel__adding-text">添加中…</span>
+                        </div>
+                      )}
                       <div className="video-panel__video-duration">
                         {video.duration}
                       </div>
@@ -422,7 +436,13 @@ export function VideoPanel() {
                     <button
                       type="button"
                       className="video-panel__dialog-btn video-panel__dialog-btn--primary"
-                      onClick={() => handleAddToTimeline(previewVideo)}
+                      onClick={async () => {
+                        const video = previewVideo;
+                        if (!video) return;
+                        setPreviewVideo(null);
+                        previewVideoRef.current?.pause();
+                        await handleAddToTimeline(video);
+                      }}
                     >
                       <Plus size={16} />
                       添加到时间轴
