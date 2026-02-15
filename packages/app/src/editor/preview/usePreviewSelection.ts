@@ -45,11 +45,13 @@ export function usePreviewSelection(
       // 如果需要实时预览属性变化，可以在这里调用 updateClipTransform 但不 pushHistory
     },
     onElementTransformEnd: (event: TransformEvent) => {
-      const { id, x, y, scaleX, scaleY, rotation } = event;
+      const { id, x, y, scaleX, scaleY, rotation, width, height } = event;
       const proj = useProjectStore.getState().project;
       const editor = editorRef.current;
       let finalX = x;
       let finalY = y;
+      let finalScaleX = scaleX;
+      let finalScaleY = scaleY;
       if (proj && editor) {
         const clip = findClipById(
           proj,
@@ -61,6 +63,32 @@ export function usePreviewSelection(
           const scaleToProjY = proj.height / stageSize.height;
           finalX = x * scaleToProjX;
           finalY = y * scaleToProjY;
+        } else if (clip?.kind === "image") {
+          // 画布上图片使用中心点坐标 + offset，需要转回 project 坐标系的左上角
+          // 画布上：x/y = 中心点，width/height = node.width() * node.scaleX()（带符号）
+          // project 中：x/y = 左上角，scaleX/scaleY = 相对 project 比例（带符号表示翻转）
+          const stageSize = editor.getStage().size();
+          const stageW = Math.max(1, stageSize.width);
+          const stageH = Math.max(1, stageSize.height);
+          const scaleToProjX = proj.width / stageW;
+          const scaleToProjY = proj.height / stageH;
+          // 计算实际尺寸（绝对值）和翻转后的 scaleX/scaleY
+          const absW =
+            width !== undefined ? Math.abs(width) : stageW * Math.abs(scaleX);
+          const absH =
+            height !== undefined ? Math.abs(height) : stageH * Math.abs(scaleY);
+          // 中心点转左上角（画布坐标系）
+          const leftTopX = x - absW / 2;
+          const leftTopY = y - absH / 2;
+          finalX = leftTopX * scaleToProjX;
+          finalY = leftTopY * scaleToProjY;
+          // 将变换后的实际尺寸转换回 clip 的 scaleX/scaleY（保留符号）
+          if (width !== undefined) {
+            finalScaleX = width / stageW;
+          }
+          if (height !== undefined) {
+            finalScaleY = height / stageH;
+          }
         } else if (clip?.kind === "video") {
           const stageSize = editor.getStage().size();
           finalX = x - (stageSize.width * scaleX) / 2;
@@ -70,8 +98,8 @@ export function usePreviewSelection(
       updateClipTransform(id, {
         x: finalX,
         y: finalY,
-        scaleX,
-        scaleY,
+        scaleX: finalScaleX,
+        scaleY: finalScaleY,
         rotation,
       });
     },

@@ -80,6 +80,11 @@ export function usePreviewImageSync(
     /**
      * 收集当前在时间线 t 可见的图片 clip 信息
      * 每个clip包括它的 asset、位置和尺寸等参数
+     *
+     * 坐标约定：
+     * - project 坐标系中 x/y 为图片左上角位置
+     * - 画布上使用中心点坐标 + offset 方式，使旋转/翻转以中心为原点
+     * - 同步时：centerX = leftTopX + width/2, offsetX = width/2
      */
     const visibleImageClips: Array<{
       id: string;
@@ -88,6 +93,10 @@ export function usePreviewImageSync(
       y: number;
       width: number;
       height: number;
+      offsetX: number;
+      offsetY: number;
+      scaleX: number;
+      scaleY: number;
       rotation?: number;
       opacity?: number;
     }> = [];
@@ -108,18 +117,30 @@ export function usePreviewImageSync(
         if (!asset || asset.kind !== "image" || !asset.source) {
           continue;
         }
-        // transform 语义：x/y 为 project 像素，scaleX/scaleY 为相对 project 比例
+        // transform 语义：x/y 为 project 像素（左上角），scaleX/scaleY 为相对 project 比例
+        // scaleX/scaleY 可能为负值（表示翻转），需要将符号和绝对值分开：
+        // - width/height 使用绝对值（Konva 节点尺寸始终为正）
+        // - scaleX/scaleY 的符号传给 Konva 节点用于翻转
         const scaleX = clip.transform?.scaleX ?? 1;
         const scaleY = clip.transform?.scaleY ?? 1;
         const projX = clip.transform?.x ?? 0;
         const projY = clip.transform?.y ?? 0;
+        const w = stageW * Math.abs(scaleX);
+        const h = stageH * Math.abs(scaleY);
+        // 将左上角坐标转换为中心点坐标（画布坐标系）
+        const leftTopX = projX * scaleToStageX;
+        const leftTopY = projY * scaleToStageY;
         visibleImageClips.push({
           id: clip.id,
           source: asset.source,
-          x: projX * scaleToStageX,
-          y: projY * scaleToStageY,
-          width: stageW * scaleX,
-          height: stageH * scaleY,
+          x: leftTopX + w / 2,
+          y: leftTopY + h / 2,
+          width: w,
+          height: h,
+          offsetX: w / 2,
+          offsetY: h / 2,
+          scaleX: Math.sign(scaleX) || 1,
+          scaleY: Math.sign(scaleY) || 1,
           rotation: clip.transform?.rotation,
           opacity: clip.transform?.opacity,
         });
@@ -151,6 +172,10 @@ export function usePreviewImageSync(
           y: clip.y,
           width: clip.width,
           height: clip.height,
+          offsetX: clip.offsetX,
+          offsetY: clip.offsetY,
+          scaleX: clip.scaleX,
+          scaleY: clip.scaleY,
           rotation: clip.rotation,
           opacity: clip.opacity,
         });
@@ -173,6 +198,10 @@ export function usePreviewImageSync(
               y: clip.y,
               width: clip.width,
               height: clip.height,
+              offsetX: clip.offsetX,
+              offsetY: clip.offsetY,
+              scaleX: clip.scaleX,
+              scaleY: clip.scaleY,
               rotation: clip.rotation,
               opacity: clip.opacity,
             });
@@ -188,20 +217,16 @@ export function usePreviewImageSync(
     }
   };
 
-  // project 卸载或切换时，清理画布上已同步的图片
-  const prevProjectRef = useRef<Project | null | undefined>(undefined);
+  // project 卸载时清理（仅当 project 变为 null 时才移除所有图片，
+  // 不在 project 引用变化时清理，避免每次 updateClipTransform 后图片被删除重建导致 Transformer 脱节）
   useEffect(() => {
-    const prev = prevProjectRef.current;
-    prevProjectRef.current = project;
-    if (prev !== undefined && prev !== project) {
-      const editor = editorRef.current;
-      if (editor) {
-        for (const id of syncedImageClipIdsRef.current) {
-          editor.removeImage(id);
-        }
-        syncedImageClipIdsRef.current.clear();
-      }
+    if (project) return;
+    const editor = editorRef.current;
+    if (!editor) return;
+    for (const id of syncedImageClipIdsRef.current) {
+      editor.removeImage(id);
     }
+    syncedImageClipIdsRef.current.clear();
   }, [editorRef, project]);
 
   // 暂停时：用 store.currentTime 同步

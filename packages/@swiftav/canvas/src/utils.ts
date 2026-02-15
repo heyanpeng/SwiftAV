@@ -59,6 +59,7 @@ export function createTransformerConfig(
 ): Konva.TransformerConfig {
   const keepRatio =
     nodeType === "text" ||
+    nodeType === "image" ||
     nodeType === "video" ||
     node.getClassName?.() === "Text";
 

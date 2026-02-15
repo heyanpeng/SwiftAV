@@ -85,6 +85,16 @@ export class SelectionManager {
   }
 
   /**
+   * 强制刷新 Transformer（节点属性被外部修改后调用，使编辑框与节点同步）
+   */
+  forceUpdateTransformer(): void {
+    if (this.transformer) {
+      this.transformer.forceUpdate();
+      this.elementLayer.batchDraw();
+    }
+  }
+
+  /**
    * 清除选中状态
    */
   clearSelection(): void {

@@ -177,9 +177,9 @@ export const SelectionToolbar = forwardRef<
   const opacity = Math.min(1, Math.max(0, Number(params.opacity) || 1));
   const opacityPercent = Math.round(opacity * 100);
 
-  /** 视频使用 transform.opacity，文本使用 params.opacity */
+  /** 视频/图片使用 transform.opacity，文本使用 params.opacity */
   const videoOpacity =
-    clipKind === "video"
+    clipKind === "video" || clipKind === "image"
       ? Math.min(1, Math.max(0, Number(selectedClip?.transform?.opacity) || 1))
       : opacity;
   const videoOpacityPercent = Math.round(videoOpacity * 100);
@@ -231,6 +231,7 @@ export const SelectionToolbar = forwardRef<
         return;
       }
     }
+    // 图片画布上使用中心点 + offset，翻转自然以中心为原点，无需位置补偿
     updateTransform({ scaleX: sx * -1 });
   };
 
@@ -253,6 +254,7 @@ export const SelectionToolbar = forwardRef<
         return;
       }
     }
+    // 图片画布上使用中心点 + offset，翻转自然以中心为原点，无需位置补偿
     updateTransform({ scaleY: sy * -1 });
   };
 
@@ -805,7 +807,7 @@ export const SelectionToolbar = forwardRef<
 
             {transformButtons}
 
-            {(clipId && (onDuplicateClip || onDeleteClip)) ? (
+            {clipId && (onDuplicateClip || onDeleteClip) ? (
               <>
                 <Toolbar.Separator className="selection-toolbar__separator" />
                 {onDuplicateClip ? (
@@ -965,7 +967,100 @@ export const SelectionToolbar = forwardRef<
 
             {transformButtons}
 
-            {(clipId && (onDuplicateClip || onDeleteClip)) ? (
+            {clipId && (onDuplicateClip || onDeleteClip) ? (
+              <>
+                <Toolbar.Separator className="selection-toolbar__separator" />
+                {onDuplicateClip ? (
+                  <Toolbar.Button
+                    className="selection-toolbar__btn"
+                    type="button"
+                    aria-label="创建副本"
+                    title="创建副本"
+                    onClick={() => onDuplicateClip(clipId)}
+                  >
+                    <CopyPlus size={16} />
+                  </Toolbar.Button>
+                ) : null}
+                {onDeleteClip ? (
+                  <Toolbar.Button
+                    className="selection-toolbar__btn"
+                    type="button"
+                    aria-label="删除"
+                    title="删除"
+                    onClick={() => onDeleteClip(clipId)}
+                  >
+                    <Trash2 size={16} />
+                  </Toolbar.Button>
+                ) : null}
+              </>
+            ) : null}
+          </>
+        ) : clipKind === "image" ? (
+          <>
+            {/* 图片不透明度 */}
+            <Popover.Root>
+              <Popover.Trigger asChild>
+                <Toolbar.Button
+                  className="selection-toolbar__btn selection-toolbar__opacity-trigger"
+                  type="button"
+                  aria-label="不透明度"
+                  title="不透明度"
+                >
+                  <Contrast size={16} />
+                  <span className="selection-toolbar__opacity-value">
+                    {videoOpacityPercent}%
+                  </span>
+                </Toolbar.Button>
+              </Popover.Trigger>
+              <Popover.Portal>
+                <Popover.Content
+                  className="selection-toolbar__popover selection-toolbar__opacity-popover"
+                  side="top"
+                  sideOffset={6}
+                  onOpenAutoFocus={(e) => e.preventDefault()}
+                >
+                  <div className="selection-toolbar__opacity-controls">
+                    <Slider.Root
+                      className="selection-toolbar__opacity-slider"
+                      value={[videoOpacityPercent]}
+                      onValueChange={([v]) => {
+                        const val = (v ?? 100) / 100;
+                        updateTransform({ opacity: val });
+                      }}
+                      min={0}
+                      max={100}
+                      step={1}
+                    >
+                      <Slider.Track className="selection-toolbar__opacity-slider-track">
+                        <Slider.Range className="selection-toolbar__opacity-slider-range" />
+                      </Slider.Track>
+                      <Slider.Thumb className="selection-toolbar__opacity-slider-thumb" />
+                    </Slider.Root>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={videoOpacityPercent}
+                      onChange={(e) => {
+                        const raw = Number(e.target.value);
+                        if (!Number.isFinite(raw)) return;
+                        const v = Math.min(100, Math.max(0, raw)) / 100;
+                        updateTransform({ opacity: v });
+                      }}
+                      className="selection-toolbar__opacity-input"
+                      aria-label="不透明度百分比"
+                    />
+                  </div>
+                </Popover.Content>
+              </Popover.Portal>
+            </Popover.Root>
+
+            <Toolbar.Separator className="selection-toolbar__separator" />
+
+            {transformButtons}
+
+            {clipId && (onDuplicateClip || onDeleteClip) ? (
               <>
                 <Toolbar.Separator className="selection-toolbar__separator" />
                 {onDuplicateClip ? (
@@ -996,7 +1091,7 @@ export const SelectionToolbar = forwardRef<
         ) : (
           <>
             {transformButtons}
-            {(clipId && (onDuplicateClip || onDeleteClip)) ? (
+            {clipId && (onDuplicateClip || onDeleteClip) ? (
               <>
                 <Toolbar.Separator className="selection-toolbar__separator" />
                 {onDuplicateClip ? (

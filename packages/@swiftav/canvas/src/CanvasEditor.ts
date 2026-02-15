@@ -252,11 +252,16 @@ export class CanvasEditor {
       y: options.y ?? 0,
       width: options.width,
       height: options.height,
+      offsetX: options.offsetX,
+      offsetY: options.offsetY,
+      scaleX: options.scaleX,
+      scaleY: options.scaleY,
       rotation: options.rotation,
       opacity: options.opacity,
       draggable: true,
     });
 
+    this.selectionManager.bindSelectionEvents(imageNode, id);
     this.elementLayer.add(imageNode);
     this.elementLayer.draw();
     this.imageMap.set(id, imageNode);
@@ -270,6 +275,10 @@ export class CanvasEditor {
       y?: number;
       width?: number;
       height?: number;
+      offsetX?: number;
+      offsetY?: number;
+      scaleX?: number;
+      scaleY?: number;
       rotation?: number;
       opacity?: number;
     },
@@ -281,9 +290,16 @@ export class CanvasEditor {
     if (options.y !== undefined) node.y(options.y);
     if (options.width !== undefined) node.width(options.width);
     if (options.height !== undefined) node.height(options.height);
+    if (options.offsetX !== undefined) node.offsetX(options.offsetX);
+    if (options.offsetY !== undefined) node.offsetY(options.offsetY);
+    // scaleX/scaleY 用于翻转（负值）和 Transformer 缩放后的重置
+    if (options.scaleX !== undefined) node.scaleX(options.scaleX);
+    if (options.scaleY !== undefined) node.scaleY(options.scaleY);
     if (options.rotation !== undefined) node.rotation(options.rotation);
     if (options.opacity !== undefined) node.opacity(options.opacity);
 
+    // 节点属性被外部修改后，需要刷新 Transformer 使编辑框与节点同步
+    this.selectionManager.forceUpdateTransformer();
     this.elementLayer.batchDraw();
   }
 

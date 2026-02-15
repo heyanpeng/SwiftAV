@@ -65,14 +65,22 @@ export interface TextOptions {
 export interface ImageOptions {
   /** 元素 id（可选，不传则自动生成） */
   id?: string;
-  /** 图片左上角 X 坐标（可选） */
+  /** 图片 X 坐标（可选，配合 offsetX/offsetY 使用时为中心点坐标） */
   x?: number;
-  /** 图片左上角 Y 坐标（可选） */
+  /** 图片 Y 坐标（可选，配合 offsetX/offsetY 使用时为中心点坐标） */
   y?: number;
-  /** 图片显示宽度（可选，像素） */
+  /** 图片显示宽度（可选，像素，始终为正值） */
   width?: number;
-  /** 图片显示高度（可选，像素） */
+  /** 图片显示高度（可选，像素，始终为正值） */
   height?: number;
+  /** 旋转/缩放原点 X 偏移（可选，设为 width/2 可实现以中心为原点） */
+  offsetX?: number;
+  /** 旋转/缩放原点 Y 偏移（可选，设为 height/2 可实现以中心为原点） */
+  offsetY?: number;
+  /** 水平缩放/翻转（可选，负值表示水平翻转，默认 1） */
+  scaleX?: number;
+  /** 垂直缩放/翻转（可选，负值表示垂直翻转，默认 1） */
+  scaleY?: number;
   /** 旋转角度（可选，单位：度） */
   rotation?: number;
   /** 不透明度（可选，0–1，默认 1） */
