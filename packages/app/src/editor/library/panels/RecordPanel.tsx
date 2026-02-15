@@ -48,8 +48,10 @@ export function RecordPanel() {
   const [showAudioRecord, setShowAudioRecord] = useState(false);
   const loadAudioFile = useProjectStore((s) => s.loadAudioFile);
 
-  const handleAddToTimeline = async (result: RecordingResult) => {
-    const fileName = `audio-record-${Date.now()}.${result.mimeType.split('/')[1]?.split(';')[0] || 'webm'}`;
+  const handleAddToTimeline = async (result: RecordingResult, name: string) => {
+    const ext = result.mimeType.split("/")[1]?.split(";")[0] || "webm";
+    const safeName = name.replace(/[/\\:*?"<>|]/g, "_").trim() || `audio-record-${Date.now()}`;
+    const fileName = `${safeName}.${ext}`;
     const file = new File([result.blob], fileName, { type: result.mimeType });
     try {
       await loadAudioFile(file);
@@ -58,9 +60,8 @@ export function RecordPanel() {
     }
   };
 
-  const handleAddToLibrary = async (result: RecordingResult) => {
-    // 暂时与添加到时间轴相同，未来可以区分
-    await handleAddToTimeline(result);
+  const handleAddToLibrary = async (result: RecordingResult, name: string) => {
+    await handleAddToTimeline(result, name);
   };
 
   return (

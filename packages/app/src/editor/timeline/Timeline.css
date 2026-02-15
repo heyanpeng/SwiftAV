@@ -191,7 +191,7 @@
 
 .swiftav-timeline-text-clip__label {
   text-align: left;
-  font-size: 13px;
+  font-size: 14px;
   color: rgba(255, 255, 255, 0.9);
   white-space: nowrap;
   overflow: hidden;
@@ -225,21 +225,25 @@
   border-right: 7px solid transparent;
 }
 
-/* 音频 clip 样式 */
+/* 音频 clip 样式：参考文本 clip，始终显示音频名称 */
 .swiftav-timeline-audio-clip {
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   gap: 6px;
-  height: 100%;
+  padding: 0 12px;
+  box-sizing: border-box;
   background: linear-gradient(135deg, #1a6b4a 0%, #0d4a32 100%);
   overflow: hidden;
   white-space: nowrap;
   position: relative;
 }
 
-/* 波形图：铺满整个 clip 容器 */
+/* 波形图：铺满整个 clip 容器，置于底层 */
 .swiftav-timeline-audio-clip__waveform {
-  display: block;
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: fill;
@@ -247,21 +251,39 @@
   user-select: none;
 }
 
-/* 波形未就绪时的 fallback：图标 + 文件名 */
+/* 音频名称：与文本 clip 样式一致 */
+.swiftav-timeline-audio-clip__label {
+  position: relative;
+  z-index: 1;
+  text-align: left;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* 有波形时，名称带渐变背景以保证在波形上可读 */
+.swiftav-timeline-audio-clip--has-waveform .swiftav-timeline-audio-clip__label {
+  padding: 6px;
+  margin-left: -4px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.5) 0%,
+    rgba(0, 0, 0, 0.5) 85%,
+    transparent 100%
+  );
+}
+
+/* 无波形时的 fallback：图标 + 名称 */
 .swiftav-timeline-audio-clip__icon {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   color: rgba(255, 255, 255, 0.85);
-  padding-left: 10px;
-}
-
-.swiftav-timeline-audio-clip__label {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.85);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding-right: 10px;
 }

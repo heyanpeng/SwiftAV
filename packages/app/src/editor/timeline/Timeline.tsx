@@ -239,20 +239,26 @@ export function Timeline() {
     }
     if (clip.kind === "audio") {
       const asset = project.assets.find((a) => a.id === clip.assetId);
-      const name = asset?.name ?? "音频";
+      const rawName = asset?.name ?? "音频";
+      const name = rawName.replace(/\.[^.]+$/, "") || rawName;
       const waveformEntry = audioWaveforms[clip.assetId];
-      // clip 在时间轴上的像素宽度
       const clipWidthPx = (action.end - action.start) * scaleWidth;
       const waveformUrl = getWaveformDataUrl(waveformEntry, clip.assetId, clipWidthPx, waveformRenderCache);
       return (
-        <div className="swiftav-timeline-audio-clip" data-swiftav-clip>
+        <div
+          className={`swiftav-timeline-audio-clip${waveformUrl ? " swiftav-timeline-audio-clip--has-waveform" : ""}`}
+          data-swiftav-clip
+        >
           {waveformUrl ? (
-            <img
-              className="swiftav-timeline-audio-clip__waveform"
-              src={waveformUrl}
-              alt=""
-              draggable={false}
-            />
+            <>
+              <img
+                className="swiftav-timeline-audio-clip__waveform"
+                src={waveformUrl}
+                alt=""
+                draggable={false}
+              />
+              <span className="swiftav-timeline-audio-clip__label">{name}</span>
+            </>
           ) : (
             <>
               <div className="swiftav-timeline-audio-clip__icon">

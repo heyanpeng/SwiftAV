@@ -34,8 +34,8 @@ import "./AudioRecordOverlay.css";
 
 type AudioRecordOverlayProps = {
   onClose: () => void;
-  onAddToTimeline?: (result: RecordingResult) => void;
-  onAddToLibrary?: (result: RecordingResult) => void;
+  onAddToTimeline?: (result: RecordingResult, name: string) => void;
+  onAddToLibrary?: (result: RecordingResult, name: string) => void;
 };
 
 /** 最大录制时长（毫秒） */
@@ -133,7 +133,7 @@ export function AudioRecordOverlay({
 }: AudioRecordOverlayProps) {
   const [showConfirmRetake, setShowConfirmRetake] = useState(false);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
-  const recordingName = "Audio-Record";
+  const [recordingName, setRecordingName] = useState("录音音频");
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackProgress, setPlaybackProgress] = useState(0);
 
@@ -447,6 +447,7 @@ export function AudioRecordOverlay({
     setShowConfirmRetake(false);
     setIsPlaying(false);
     setPlaybackProgress(0);
+    setRecordingName("录音音频");
     revokeObjectUrl();
     if (audioRef.current) {
       audioRef.current.pause();
@@ -457,14 +458,14 @@ export function AudioRecordOverlay({
 
   const handleAddToTimeline = () => {
     if (recorder.result && onAddToTimeline) {
-      onAddToTimeline(recorder.result);
+      onAddToTimeline(recorder.result, recordingName.trim() || "录音音频");
       onClose();
     }
   };
 
   const handleAddToLibrary = () => {
     if (recorder.result && onAddToLibrary) {
-      onAddToLibrary(recorder.result);
+      onAddToLibrary(recorder.result, recordingName.trim() || "录音音频");
       onClose();
     }
   };
@@ -631,23 +632,14 @@ export function AudioRecordOverlay({
       {phase === "stopped" && recorder.result && (
         <>
           <div className="audio-record-overlay__preview-header">
-            <div className="audio-record-overlay__preview-title">
-              <span>{recordingName}</span>
-              <button
-                className="audio-record-overlay__edit-btn"
-                aria-label="编辑名称"
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path
-                    d="M11.333 2a1.414 1.414 0 0 1 2 2L5 13.667 2 14.667l1-3L9.333 2.667a1.414 1.414 0 0 1 2-2z"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-            </div>
+            <input
+              type="text"
+              className="audio-record-overlay__preview-title"
+              value={recordingName}
+              onChange={(e) => setRecordingName(e.target.value)}
+              placeholder="录制名称"
+              aria-label="录制名称"
+            />
             <div className="audio-record-overlay__preview-time">
               {audioRef.current && audioRef.current.duration
                 ? formatDuration(audioRef.current.currentTime * 1000)
