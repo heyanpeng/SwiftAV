@@ -37,6 +37,10 @@ ViteCut/
 └── package.json
 ```
 
+## 在线 Demo
+
+- **GitHub Pages**：[`https://heyanpeng.github.io/ViteCut/`](https://heyanpeng.github.io/ViteCut/)
+
 ## 环境与依赖
 
 - **Node.js**：建议 18+
@@ -61,6 +65,18 @@ pnpm install
 | `pnpm lint`           | 全仓库 lint                              |
 | `pnpm preview`        | 预览构建后的 app                         |
 | `pnpm clean`          | 清理各包 dist 目录                       |
+
+## 部署（GitHub Pages）
+
+- **工作流**：每次推送到 `master` 分支时，`.github/workflows/deploy.yml` 会构建应用并部署到 GitHub Pages。
+- **构建命令**：在设置 `GITHUB_PAGES=true` 的环境变量下执行 `pnpm build:app`，使 `vite.config.ts` 使用 `base: "/ViteCut/"`。
+- **输出目录**：GitHub Pages 工作流会上传 `packages/app/dist` 目录作为站点产物。
+
+本地模拟 GitHub Pages 构建方式：
+
+```bash
+GITHUB_PAGES=true pnpm build:app
+```
 
 ## 技术栈
 

@@ -37,6 +37,10 @@ ViteCut/
 └── package.json
 ```
 
+## Online demo
+
+- **GitHub Pages**: [https://heyanpeng.github.io/ViteCut/](https://heyanpeng.github.io/ViteCut/)
+
 ## Requirements
 
 - **Node.js**: 18+
@@ -61,6 +65,18 @@ pnpm install
 | `pnpm lint`           | Lint entire repo                                |
 | `pnpm preview`        | Preview built app                               |
 | `pnpm clean`          | Remove all `dist` directories                   |
+
+## Deployment (GitHub Pages)
+
+- **Workflow**: on each push to `master`, `.github/workflows/deploy.yml` builds the app and deploys to GitHub Pages.
+- **Build command**: `pnpm build:app` with `GITHUB_PAGES=true` so `vite.config.ts` uses `base: "/ViteCut/"`.
+- **Output path**: the GitHub Pages workflow uploads `packages/app/dist` as the site artifact.
+
+To locally simulate the GitHub Pages build:
+
+```bash
+GITHUB_PAGES=true pnpm build:app
+```
 
 ## Tech stack
 
