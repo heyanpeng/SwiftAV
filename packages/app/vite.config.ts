@@ -8,7 +8,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: process.env.GITHUB_PAGES ? "/ViteCut/" : "/",
+  // 自定义域名下直接部署在根路径，因此固定为 "/"
+  base: "/",
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
