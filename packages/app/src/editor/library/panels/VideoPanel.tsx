@@ -63,6 +63,8 @@ type VideoItem = {
   photographer?: string;
 };
 
+type DisplayVideoItem = VideoItem & { column: 0 | 1 };
+
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
@@ -144,7 +146,7 @@ const TAGS: { label: string; query: string }[] = [
 ];
 
 export function VideoPanel() {
-  const [videos, setVideos] = useState<VideoItem[]>([]);
+  const [videos, setVideos] = useState<DisplayVideoItem[]>([]);
   const [page, setPage] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -163,11 +165,29 @@ export function VideoPanel() {
       try {
         const data = await fetchPexelsVideos(q, pageNum);
         const items = data.videos.map(mapPexelsToItem);
-        if (append) {
-          setVideos((prev) => [...prev, ...items]);
-        } else {
-          setVideos(items);
-        }
+
+        // 瀑布流两列：append 时保持已有 item 的列不变，只给新视频分配列，避免位置跳动
+        setVideos((prev) => {
+          const prevList = append ? prev : [];
+          const colHeights: [number, number] = [0, 0];
+
+          if (append) {
+            for (const v of prevList) {
+              const ratio = v.width && v.height ? v.height / v.width : 9 / 16;
+              colHeights[v.column] += ratio;
+            }
+          }
+
+          const next: DisplayVideoItem[] = [...prevList];
+          for (const v of items) {
+            const ratio = v.width && v.height ? v.height / v.width : 9 / 16;
+            const col = colHeights[0] <= colHeights[1] ? 0 : 1;
+            colHeights[col] += ratio;
+            next.push({ ...v, column: col });
+          }
+
+          return next;
+        });
         setTotalResults(data.total_results);
       } catch (e) {
         setError(e instanceof Error ? e.message : "加载失败");
@@ -291,85 +311,93 @@ export function VideoPanel() {
             </div>
           )}
 
-          <div className="video-panel__grid">
-            {isLoading
-              ? Array.from({ length: 6 }).map((_, index) => (
-                  <div key={index} className="video-panel__skeleton-item">
-                    <div className="video-panel__skeleton-thumbnail"></div>
-                  </div>
-                ))
-              : videos.map((video) => (
-                  <div
-                    key={video.id}
-                    className={`video-panel__video-item ${
-                      video.aspectRatio === "portrait"
-                        ? "video-panel__video-item--portrait"
-                        : ""
-                    }`}
-                    onClick={() => {
-                      if (addingVideoId === video.id) return;
-                      void addVideoToCanvas(video);
-                    }}
-                    onMouseEnter={() => {
-                      setHoveredVideoId(video.id);
-                      const el = videoRefs.current[video.id];
-                      if (el) {
-                        el.currentTime = 0;
-                        void el.play();
-                      }
-                    }}
-                    onMouseLeave={() => {
-                      const el = videoRefs.current[video.id];
-                      if (el) {
-                        el.pause();
-                      }
-                      setHoveredVideoId(null);
-                    }}
-                  >
-                    <div className="video-panel__video-thumbnail">
-                      <img
-                        src={video.thumbnailUrl}
-                        alt={video.title}
-                        className="video-panel__video-thumbnail-image"
-                      />
-                      <video
-                        ref={(el) => {
-                          videoRefs.current[video.id] = el;
+          {isLoading ? (
+            <div className="video-panel__grid">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="video-panel__skeleton-item">
+                  <div className="video-panel__skeleton-thumbnail"></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="video-panel__grid">
+              {[0, 1].map((col) => (
+                <div key={col} className="video-panel__column">
+                  {videos
+                    .filter((video) => video.column === col)
+                    .map((video) => (
+                      <div
+                        key={video.id}
+                        className="video-panel__video-item"
+                        onClick={() => {
+                          if (addingVideoId === video.id) return;
+                          void addVideoToCanvas(video);
                         }}
-                        src={video.videoUrl}
-                        className={`video-panel__video-preview ${
-                          hoveredVideoId === video.id
-                            ? "video-panel__video-preview--visible"
-                            : ""
-                        }`}
-                        muted
-                        loop
-                        playsInline
-                        preload="metadata"
-                      />
-                      <button
-                        type="button"
-                        className="video-panel__zoom-btn"
-                        aria-label="查看详情"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setPreviewVideo(video);
+                        onMouseEnter={() => {
+                          setHoveredVideoId(video.id);
+                          const el = videoRefs.current[video.id];
+                          if (el) {
+                            el.currentTime = 0;
+                            void el.play();
+                          }
+                        }}
+                        onMouseLeave={() => {
+                          const el = videoRefs.current[video.id];
+                          if (el) {
+                            el.pause();
+                          }
+                          setHoveredVideoId(null);
                         }}
                       >
-                        <Maximize2 size={18} />
-                      </button>
-                      {addingVideoId === video.id && (
-                        <div className="video-panel__adding-mask">
-                          <span className="video-panel__adding-text">添加中…</span>
+                        <div className="video-panel__video-thumbnail">
+                          <img
+                            src={video.thumbnailUrl}
+                            alt={video.title}
+                            className="video-panel__video-thumbnail-image"
+                          />
+                          <video
+                            ref={(el) => {
+                              videoRefs.current[video.id] = el;
+                            }}
+                            src={video.videoUrl}
+                            className={`video-panel__video-preview ${
+                              hoveredVideoId === video.id
+                                ? "video-panel__video-preview--visible"
+                                : ""
+                            }`}
+                            muted
+                            loop
+                            playsInline
+                            preload="metadata"
+                          />
+                          <button
+                            type="button"
+                            className="video-panel__zoom-btn"
+                            aria-label="查看详情"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewVideo(video);
+                            }}
+                          >
+                            <Maximize2 size={18} />
+                          </button>
+                          {addingVideoId === video.id && (
+                            <div className="video-panel__adding-mask">
+                              <span className="video-panel__adding-text">
+                                添加中…
+                              </span>
+                            </div>
+                          )}
+                          <div className="video-panel__video-duration">
+                            {video.duration}
+                          </div>
                         </div>
-                      )}
-                      <div className="video-panel__video-duration">
-                        {video.duration}
                       </div>
-                    </div>
-                  </div>
-                ))}
-          </div>
+                    ))}
+                </div>
+              ))}
+            </div>
+          )}
 
           {showLoadMore && (
             <div className="video-panel__pagination">
