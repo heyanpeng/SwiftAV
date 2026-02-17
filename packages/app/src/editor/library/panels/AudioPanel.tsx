@@ -134,7 +134,7 @@ async function fetchFreesoundTracks(
   return res.json();
 }
 
-export function AudioPanel() {
+export function AudioPanel({ isActive }: { isActive: boolean }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -161,7 +161,7 @@ export function AudioPanel() {
   );
 
   // 停止当前试听（用于重新查询等场景）
-  const stopPreview = () => {
+  const stopPreview = useCallback(() => {
     if (previewAudioRef.current) {
       previewAudioRef.current.pause();
       previewAudioRef.current.currentTime = 0;
@@ -169,7 +169,7 @@ export function AudioPanel() {
     setIsPreviewPlaying(false);
     setPreviewTrackId(null);
     setPreviewCurrentTime(0);
-  };
+  }, []);
 
   const loadPage = useCallback(
     async (q: string, pageNum: number, append: boolean) => {
@@ -209,6 +209,13 @@ export function AudioPanel() {
   useEffect(() => {
     loadPage(queryForApi, page, page > 1);
   }, [queryForApi, page, loadPage]);
+
+  // tab 切换离开音频面板时，停止当前试听
+  useEffect(() => {
+    if (!isActive) {
+      stopPreview();
+    }
+  }, [isActive, stopPreview]);
 
   const handleSearchSubmit = () => {
     setQueryForApi(buildQueryForApi(searchQuery));

@@ -76,7 +76,7 @@ export function Library() {
         )}
         {renderedPanels.has("audio") && (
           <div style={{ display: activeTab === "audio" ? "block" : "none" }}>
-            <AudioPanel />
+            <AudioPanel isActive={activeTab === "audio"} />
           </div>
         )}
         {renderedPanels.has("videos") && (

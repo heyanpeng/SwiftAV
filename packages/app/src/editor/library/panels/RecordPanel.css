@@ -1,5 +1,5 @@
 .record-panel {
-  width: 370px;
+  width: 100%;
   height: calc(100% - 20px);
   display: flex;
   flex-direction: column;
