@@ -13,30 +13,8 @@
   display: flex;
   flex-direction: column;
   padding: 16px;
-  gap: 16px;
+  gap: 10px;
   overflow: hidden;
-}
-
-/* 本地上传区域 */
-.audio-panel__upload {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px;
-  border: 1px dashed hsla(0, 0%, 100%, 0.2);
-  border-radius: 8px;
-  color: hsla(0, 0%, 100%, 0.7);
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
-
-.audio-panel__upload:hover {
-  border-color: hsla(0, 0%, 100%, 0.4);
-  color: #ffffff;
-  background-color: hsla(0, 0%, 100%, 0.05);
 }
 
 .audio-panel__scrollable {
@@ -118,80 +96,6 @@
   background-color: #2c2c31;
 }
 
-.audio-panel__header-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.audio-panel__category {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  background-color: #202024;
-  border-radius: 8px;
-  color: #ffffff;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  position: relative;
-}
-
-.audio-panel__category:hover {
-  background-color: #202024;
-}
-
-.audio-panel__category svg {
-  color: #888888;
-}
-
-.audio-panel__category-dropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  background-color: #2a2a2a;
-  border-radius: 8px;
-  overflow: hidden;
-  z-index: 100;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.audio-panel__category-option {
-  padding: 10px 12px;
-  color: #ffffff;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.audio-panel__category-option:hover {
-  background-color: #202024;
-}
-
-.audio-panel__category-option--selected {
-  background-color: #202024;
-}
-
-.audio-panel__filter-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  background-color: #202024;
-  border: none;
-  border-radius: 8px;
-  color: #ffffff;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.audio-panel__filter-btn:hover {
-  background-color: #202024;
-}
-
 /* 标签筛选区 */
 .audio-panel__tags {
   display: flex;
@@ -201,6 +105,7 @@
   overflow-x: auto;
   overflow-y: hidden;
   padding-bottom: 4px;
+  flex-shrink: 0;
 }
 
 .audio-panel__tags::-webkit-scrollbar {
@@ -231,11 +136,9 @@
 
 /* 音频列表 */
 .audio-panel__list {
-  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  min-height: 0;
 }
 
 /* 骨架屏样式 */
@@ -288,13 +191,12 @@
 /* 音频轨道项样式 */
 .audio-panel__track-item {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 8px 6px;
   border-radius: 8px;
   cursor: pointer;
   transition: background-color 0.2s;
-  height: 60px;
   box-sizing: border-box;
 }
 
@@ -362,6 +264,12 @@
   border-radius: 8px;
 }
 
+.audio-panel__track-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .audio-panel__track-info {
   flex: 1;
   display: flex;
@@ -393,4 +301,66 @@
   flex-shrink: 0;
   text-align: right;
   min-width: 40px;
+}
+
+.audio-panel__track-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px 2px;
+}
+
+.audio-panel__track-time {
+  font-size: 11px;
+  color: #a1a1aa;
+  min-width: 34px;
+}
+
+.audio-panel__track-progress-bar {
+  flex: 1;
+  height: 3px;
+  border-radius: 999px;
+  background-color: #2a2a2a;
+  overflow: hidden;
+  transform-origin: center;
+  transition: transform 0.12s ease-out;
+}
+
+.audio-panel__track-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e, #3b82f6);
+  border-radius: inherit;
+  transition: width 0.12s linear;
+}
+
+.audio-panel__track-progress-bar:hover {
+  transform: scaleY(2);
+}
+
+/* 分页 */
+.audio-panel__pagination {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0;
+  flex-shrink: 0;
+}
+
+.audio-panel__load-more {
+  padding: 8px 20px;
+  background-color: #202024;
+  border: none;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.audio-panel__load-more:hover:not(:disabled) {
+  background-color: #2c2c31;
+}
+
+.audio-panel__load-more:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }

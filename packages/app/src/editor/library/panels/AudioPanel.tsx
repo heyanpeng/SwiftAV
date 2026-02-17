@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Search, ChevronDown, Filter, Music, Play, Upload } from "lucide-react";
+import { Search, Music, Play, Square } from "lucide-react";
 import { useProjectStore } from "@/stores";
 import "./AudioPanel.css";
 
@@ -8,155 +8,315 @@ type AudioTrack = {
   title: string;
   artist: string;
   duration: string;
+  durationSeconds: number;
+  audioUrl: string;
   coverUrl?: string;
 };
 
-const mockTracks: AudioTrack[] = [
-  {
-    id: "1",
-    title: "Lofi Study",
-    artist: "FASSounds",
-    duration: "2:27",
-    coverUrl:
-      "https://s1.clideo.com/stocks/pixabay/thumbs/audio_music_33106_1f75b2fc.png",
-  },
-  {
-    id: "2",
-    title: "The Cradle of Your Soul",
-    artist: "lemonmusicstudio",
-    duration: "2:58",
-    coverUrl:
-      "https://s1.clideo.com/stocks/pixabay/thumbs/audio_music_33106_1f75b2fc.png",
-  },
-  {
-    id: "3",
-    title: "Forest Lullaby",
-    artist: "Lesfm",
-    duration: "3:16",
-  },
-  {
-    id: "4",
-    title: "Piano Moment",
-    artist: "Benjamin Tissot",
-    duration: "1:43",
-  },
-  {
-    id: "5",
-    title: "Ambient Piano & Strings",
-    artist: "Daddy_s_Music",
-    duration: "3:37",
-  },
-  {
-    id: "6",
-    title: "Happy Day",
-    artist: "Stockaudios",
-    duration: "2:50",
-    coverUrl:
-      "https://s1.clideo.com/stocks/pixabay/thumbs/audio_music_33106_1f75b2fc.png",
-  },
-  {
-    id: "7",
-    title: "Just Relax",
-    artist: "Lesfm",
-    duration: "2:15",
-  },
-  {
-    id: "8",
-    title: "Relaxed Vlog (Night Street)",
-    artist: "Ashot-Danielyan-Composer",
-    duration: "2:21",
-    coverUrl:
-      "https://s1.clideo.com/stocks/pixabay/thumbs/audio_music_33106_1f75b2fc.png",
-  },
-  {
-    id: "9",
-    title: "Chill Abstract",
-    artist: "Benjamin Tissot",
-    duration: "3:05",
-  },
+// Freesound API 配置
+const FREESOUND_API_BASE = "https://freesound.org/apiv2";
+const PER_PAGE = 15;
+
+type FreesoundPreviews = {
+  "preview-hq-mp3"?: string;
+  "preview-lq-mp3"?: string;
+  "preview-hq-ogg"?: string;
+  "preview-lq-ogg"?: string;
+};
+
+type FreesoundImages = {
+  waveform_m?: string;
+  spectral_m?: string;
+};
+
+type FreesoundSound = {
+  id: number;
+  name: string;
+  username: string;
+  duration: number;
+  previews: FreesoundPreviews;
+  images?: FreesoundImages;
+};
+
+type FreesoundSearchResponse = {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: FreesoundSound[];
+};
+
+const TAGS: { label: string; query: string }[] = [
+  { label: "背景音乐", query: "background music" },
+  { label: "放松", query: "lofi chill" },
+  { label: "欢快", query: "upbeat" },
+  { label: "快乐", query: "happy" },
+  { label: "节拍", query: "beat" },
+  { label: "Vlog音乐", query: "vlog music" },
+  { label: "激励", query: "motivation" },
+  { label: "搞笑", query: "funny" },
+  { label: "企业", query: "corporate" },
+  { label: "器乐", query: "instrumental" },
 ];
 
-const tags = [
-  "背景音乐", // background music
-  "放松", // relaxing
-  "欢快", // upbeat
-  "快乐", // happy
-  "节拍", // beats
-  "Vlog音乐", // vlog music
-  "激励", // motivation
-  "搞笑", // funny
-  "企业", // corporate
-  "器乐", // instrumental
-];
+function formatDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
 
-const AUDIO_ACCEPT = "audio/*,.mp3,.wav,.aac,.ogg,.flac,.m4a,.wma";
+function mapFreesoundToTrack(s: FreesoundSound): AudioTrack | null {
+  const audioUrl =
+    s.previews["preview-hq-mp3"] ??
+    s.previews["preview-lq-mp3"] ??
+    s.previews["preview-hq-ogg"] ??
+    s.previews["preview-lq-ogg"];
+
+  if (!audioUrl) {
+    return null;
+  }
+
+  return {
+    id: String(s.id),
+    title: s.name || `Sound ${s.id}`,
+    artist: s.username,
+    duration: formatDuration(s.duration),
+    durationSeconds: s.duration,
+    audioUrl,
+    coverUrl: s.images?.waveform_m ?? s.images?.spectral_m,
+  };
+}
+
+function makeAudioFileNameFromTitle(title: string, fallbackId: string): string {
+  const base =
+    title
+      .trim()
+      // 替换非法文件名字符
+      .replace(/[\\/:*?"<>|]+/g, " ")
+      .replace(/\s+/g, " ")
+      .slice(0, 60) || `audio-${fallbackId}`;
+  return `${base}.mp3`;
+}
+
+async function fetchFreesoundTracks(
+  query: string,
+  page: number,
+): Promise<FreesoundSearchResponse> {
+  const token = import.meta.env.VITE_FREESOUND_API_KEY;
+  if (!token) {
+    throw new Error("缺少 Freesound API Key（VITE_FREESOUND_API_KEY）");
+  }
+
+  const params = new URLSearchParams({
+    // 默认用更偏 BGM 的关键词，避免大量杂项占据前排
+    query: query || "background music",
+    page: String(page),
+    page_size: String(PER_PAGE),
+    fields: "id,name,username,duration,previews,images",
+    // 默认过滤掉极短音频，保留更适合作为背景音乐的素材
+    // Freesound 语法：duration:[最小秒数 TO *]
+    filter: "duration:[10 TO *]",
+    // 按下载量排序，优先展示更常用的音频
+    sort: "downloads_desc",
+    // 同一个 pack 只保留一个结果，减少同类“zzzbeats miscellaneous music”刷屏
+    group_by_pack: "1",
+  });
+
+  const res = await fetch(`${FREESOUND_API_BASE}/search/?${params}`, {
+    headers: {
+      Authorization: `Token ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Freesound API error: ${res.status}`);
+  }
+
+  return res.json();
+}
 
 export function AudioPanel() {
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [tracks, setTracks] = useState<AudioTrack[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("音乐");
-  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
-  const categoryRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [queryForApi, setQueryForApi] = useState("music");
   const loadAudioFile = useProjectStore((s) => s.loadAudioFile);
+  const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null);
+  const [hoveredTrackId, setHoveredTrackId] = useState<string | null>(null);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [previewTrackId, setPreviewTrackId] = useState<string | null>(null);
+  const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
+  const [previewCurrentTime, setPreviewCurrentTime] = useState(0);
 
-  const categories = ["音乐", "音效"];
+  const buildQueryForApi = useCallback(
+    (raw: string) => {
+      const trimmed = raw.trim();
+      if (trimmed) return trimmed;
+      return "music";
+    },
+    [],
+  );
 
-  // 模拟数据加载
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-      // 数据加载完成后，默认选中 "Just Relax"
-      setSelectedTrackId("7");
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // 点击外部关闭下拉菜单
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        categoryRef.current &&
-        !categoryRef.current.contains(event.target as Node)
-      ) {
-        setIsCategoryOpen(false);
-      }
-    };
-
-    if (isCategoryOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
+  // 停止当前试听（用于重新查询等场景）
+  const stopPreview = () => {
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause();
+      previewAudioRef.current.currentTime = 0;
     }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isCategoryOpen]);
-
-  const handleTagClick = (tag: string) => {
-    setSearchQuery(tag);
+    setIsPreviewPlaying(false);
+    setPreviewTrackId(null);
+    setPreviewCurrentTime(0);
   };
 
-  const handleUploadClick = useCallback(() => {
-    fileInputRef.current?.click();
-  }, []);
+  const loadPage = useCallback(
+    async (q: string, pageNum: number, append: boolean) => {
+      const setLoading = append ? setIsLoadingMore : setIsLoading;
+      setLoading(true);
+      setError(null);
+      try {
+        // 新查询（非 append）时，停止当前试听播放
+        if (!append) {
+          stopPreview();
+        }
+        const data = await fetchFreesoundTracks(q, pageNum);
+        const items = data.results
+          .map(mapFreesoundToTrack)
+          .filter((t): t is AudioTrack => t !== null);
 
-  const handleFileChange = useCallback(
-    async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      if (!file) {
+        if (append) {
+          setTracks((prev) => [...prev, ...items]);
+        } else {
+          setTracks(items);
+        }
+
+        setTotalResults(data.count);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "音频加载失败");
+        if (!append) {
+          setTracks([]);
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
+
+  // 初始加载与搜索/分页
+  useEffect(() => {
+    loadPage(queryForApi, page, page > 1);
+  }, [queryForApi, page, loadPage]);
+
+  const handleSearchSubmit = () => {
+    setQueryForApi(buildQueryForApi(searchQuery));
+    setPage(1);
+  };
+
+  const handleTagClick = (tag: { label: string; query: string }) => {
+    setSearchQuery(tag.query);
+    setQueryForApi(buildQueryForApi(tag.query));
+    setPage(1);
+  };
+
+  // 试听：点击播放按钮只播放预览，不添加到时间轴
+  const handlePreviewClick = useCallback(
+    async (event: React.MouseEvent, track: AudioTrack) => {
+      event.stopPropagation();
+      if (!track.audioUrl) return;
+
+      if (!previewAudioRef.current) {
+        previewAudioRef.current = new Audio();
+        previewAudioRef.current.addEventListener("ended", () => {
+          setIsPreviewPlaying(false);
+          setPreviewTrackId(null);
+          setPreviewCurrentTime(0);
+        });
+        previewAudioRef.current.addEventListener("timeupdate", () => {
+          if (previewAudioRef.current) {
+            setPreviewCurrentTime(previewAudioRef.current.currentTime);
+          }
+        });
+      }
+
+      const audio = previewAudioRef.current;
+
+      // 再次点击同一条且正在播放时，暂停
+      if (previewTrackId === track.id && isPreviewPlaying) {
+        audio.pause();
+        stopPreview();
         return;
       }
+
+      setPreviewTrackId(track.id);
+      audio.src = track.audioUrl;
+      audio.currentTime = 0;
+      setPreviewCurrentTime(0);
       try {
+        await audio.play();
+        setIsPreviewPlaying(true);
+      } catch (err) {
+        console.error("预览播放失败:", err);
+        setIsPreviewPlaying(false);
+      }
+    },
+    [isPreviewPlaying, previewTrackId, stopPreview],
+  );
+
+  // 卸载时停止预览播放
+  useEffect(() => {
+    return () => {
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+        previewAudioRef.current = null;
+      }
+    };
+  }, []);
+
+  const addTrackToProject = useCallback(
+    async (track: AudioTrack) => {
+      if (!track.audioUrl) return;
+      setLoadingTrackId(track.id);
+      try {
+        const res = await fetch(track.audioUrl);
+        const blob = await res.blob();
+        const fileName = makeAudioFileNameFromTitle(track.title, track.id);
+        const file = new File([blob], fileName, {
+          type: blob.type || "audio/mpeg",
+        });
         await loadAudioFile(file);
       } catch (err) {
         console.error("音频加载失败:", err);
       } finally {
-        event.target.value = "";
+        setLoadingTrackId(null);
       }
     },
     [loadAudioFile],
   );
+
+  // 点击进度条控制试听播放进度
+  const handlePreviewSeek = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>, track: AudioTrack) => {
+      event.stopPropagation();
+      if (!previewAudioRef.current) return;
+      if (previewTrackId !== track.id) return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      if (rect.width <= 0) return;
+      const ratio = Math.min(
+        1,
+        Math.max(0, (event.clientX - rect.left) / rect.width),
+      );
+      const targetTime = ratio * track.durationSeconds;
+      previewAudioRef.current.currentTime = targetTime;
+      setPreviewCurrentTime(targetTime);
+    },
+    [previewTrackId],
+  );
+
+  const hasMore = tracks.length < totalResults;
+  const showLoadMore = !isLoading && !error && hasMore && tracks.length > 0;
 
   return (
     <div className="audio-panel">
@@ -170,74 +330,31 @@ export function AudioPanel() {
               placeholder="搜索音乐..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleSearchSubmit();
+                }
+              }}
               className="audio-panel__search-input"
             />
           </div>
-          <div className="audio-panel__header-controls">
-            <div
-              ref={categoryRef}
-              className="audio-panel__category"
-              onClick={() => setIsCategoryOpen(!isCategoryOpen)}
+        </div>
+
+        {/* 标签筛选区（与视频面板结构保持一致，放在 scrollable 之外） */}
+        <div className="audio-panel__tags">
+          {TAGS.map((tag) => (
+            <button
+              key={tag.query}
+              className="audio-panel__tag"
+              onClick={() => handleTagClick(tag)}
             >
-              <span>{selectedCategory}</span>
-              <ChevronDown size={14} />
-              {isCategoryOpen && (
-                <div className="audio-panel__category-dropdown">
-                  {categories.map((category) => (
-                    <div
-                      key={category}
-                      className={`audio-panel__category-option ${
-                        selectedCategory === category
-                          ? "audio-panel__category-option--selected"
-                          : ""
-                      }`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedCategory(category);
-                        setIsCategoryOpen(false);
-                      }}
-                    >
-                      {category}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <button className="audio-panel__filter-btn">
-              <Filter size={16} />
+              {tag.label}
             </button>
-          </div>
+          ))}
         </div>
 
-        {/* 本地上传区域 */}
-        <div className="audio-panel__upload" onClick={handleUploadClick}>
-          <Upload size={18} />
-          <span>上传本地音频</span>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={AUDIO_ACCEPT}
-            style={{ display: "none" }}
-            onChange={handleFileChange}
-          />
-        </div>
-
-        {/* 可滚动区域 */}
+        {/* 可滚动区域：列表 + 分页，分页紧跟在列表最后一项之后 */}
         <div className="audio-panel__scrollable">
-          {/* 标签筛选区 */}
-          <div className="audio-panel__tags">
-            {tags.map((tag) => (
-              <button
-                key={tag}
-                className="audio-panel__tag"
-                onClick={() => handleTagClick(tag)}
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
-
-          {/* 音频列表 */}
           <div className="audio-panel__list">
             {isLoading ? (
               // 骨架屏状态
@@ -256,56 +373,137 @@ export function AudioPanel() {
             ) : (
               // 数据加载完成状态
               <>
-                {mockTracks.map((track) => (
-                  <div
-                    key={track.id}
-                    className={`audio-panel__track-item ${
-                      selectedTrackId === track.id
-                        ? "audio-panel__track-item--selected"
-                        : ""
-                    }`}
-                    onClick={() => setSelectedTrackId(track.id)}
-                  >
-                    <div className="audio-panel__track-cover">
-                      {track.coverUrl ? (
-                        <>
-                          <img
-                            src={track.coverUrl}
-                            alt={track.title}
-                            className="audio-panel__track-cover-image"
-                          />
-                          {selectedTrackId === track.id && (
-                            <div className="audio-panel__track-cover-play-overlay">
-                              <Play size={16} fill="currentColor" />
+                {error && (
+                  <div className="audio-panel__error">
+                    {error}
+                    <button
+                      type="button"
+                      className="audio-panel__retry"
+                      onClick={() => loadPage(queryForApi, 1, false)}
+                    >
+                      重试
+                    </button>
+                  </div>
+                )}
+                {tracks.map((track) => {
+                  const isPlaying =
+                    previewTrackId === track.id && isPreviewPlaying;
+                  const progress =
+                    track.durationSeconds > 0
+                      ? Math.min(1, previewCurrentTime / track.durationSeconds)
+                      : 0;
+
+                  return (
+                    <div
+                      key={track.id}
+                      className={`audio-panel__track-item ${
+                        isPlaying
+                          ? "audio-panel__track-item--selected"
+                          : ""
+                      }`}
+                      onClick={() => {
+                        void addTrackToProject(track);
+                      }}
+                      onMouseEnter={() => setHoveredTrackId(track.id)}
+                      onMouseLeave={() => setHoveredTrackId(null)}
+                    >
+                      <div className="audio-panel__track-main">
+                        <div className="audio-panel__track-cover">
+                          {track.coverUrl ? (
+                            <>
+                              <img
+                                src={track.coverUrl}
+                                alt={track.title}
+                                className="audio-panel__track-cover-image"
+                              />
+                              {(hoveredTrackId === track.id || isPlaying) && (
+                                <button
+                                  type="button"
+                                  className="audio-panel__track-cover-play-overlay"
+                                  onClick={(e) => handlePreviewClick(e, track)}
+                                  aria-label={
+                                    isPlaying ? "停止播放" : "试听音频"
+                                  }
+                                >
+                                  {isPlaying ? (
+                                    <Square size={16} fill="currentColor" />
+                                  ) : (
+                                    <Play size={16} fill="currentColor" />
+                                  )}
+                                </button>
+                              )}
+                            </>
+                          ) : hoveredTrackId === track.id || isPlaying ? (
+                            <button
+                              type="button"
+                              className="audio-panel__track-cover-play"
+                              onClick={(e) => handlePreviewClick(e, track)}
+                              aria-label={isPlaying ? "停止播放" : "试听音频"}
+                            >
+                              {isPlaying ? (
+                                <Square size={16} fill="currentColor" />
+                              ) : (
+                                <Play size={16} fill="currentColor" />
+                              )}
+                            </button>
+                          ) : (
+                            <div className="audio-panel__track-cover-icon">
+                              <Music size={20} />
                             </div>
                           )}
-                        </>
-                      ) : selectedTrackId === track.id ? (
-                        <div className="audio-panel__track-cover-play">
-                          <Play size={16} fill="currentColor" />
                         </div>
-                      ) : (
-                        <div className="audio-panel__track-cover-icon">
-                          <Music size={20} />
+                        <div className="audio-panel__track-info">
+                          <div className="audio-panel__track-title">
+                            {track.title}
+                          </div>
+                          <div className="audio-panel__track-artist">
+                            {track.artist}
+                          </div>
+                        </div>
+                        <div className="audio-panel__track-duration">
+                          {loadingTrackId === track.id
+                            ? "加载中…"
+                            : track.duration}
+                        </div>
+                      </div>
+
+                      {previewTrackId === track.id && (
+                        <div className="audio-panel__track-progress">
+                          <span className="audio-panel__track-time">
+                            {formatDuration(previewCurrentTime)}
+                          </span>
+                          <div
+                            className="audio-panel__track-progress-bar"
+                            onClick={(e) => handlePreviewSeek(e, track)}
+                          >
+                            <div
+                              className="audio-panel__track-progress-fill"
+                              style={{ width: `${progress * 100}%` }}
+                            />
+                          </div>
+                          <span className="audio-panel__track-time">
+                            {track.duration}
+                          </span>
                         </div>
                       )}
                     </div>
-                    <div className="audio-panel__track-info">
-                      <div className="audio-panel__track-title">
-                        {track.title}
-                      </div>
-                      <div className="audio-panel__track-artist">
-                        {track.artist}
-                      </div>
-                    </div>
-                    <div className="audio-panel__track-duration">
-                      {track.duration}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </>
             )}
           </div>
+          {showLoadMore && (
+            <div className="audio-panel__pagination">
+              <button
+                type="button"
+                className="audio-panel__load-more"
+                disabled={isLoadingMore}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                {isLoadingMore ? "加载中…" : "加载更多"}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
