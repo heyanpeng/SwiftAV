@@ -483,8 +483,8 @@
 
 .media-panel__dialog-meta {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  flex-direction: column;
+  gap: 4px;
   color: #a1a1aa;
   font-size: 13px;
 }
